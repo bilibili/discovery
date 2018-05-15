@@ -2,9 +2,10 @@ package model
 
 import (
 	"encoding/json"
-	"fmt"
 	"sync"
 	"time"
+
+	"github.com/Bilibili/discovery/errors"
 
 	log "golang/log4go"
 )
@@ -46,18 +47,15 @@ const (
 // Instance holds information required for registration with
 // <Discovery Server> and to be discovered by other components.
 type Instance struct {
-	Region   string          `json:"region"`
-	Zone     string          `json:"zone"`
-	Env      string          `json:"env"`
-	Appid    string          `json:"appid"`
-	Treeid   int64           `json:"treeid"`
-	Hostname string          `json:"hostname"`
-	HTTP     string          `json:"http"`
-	RPC      string          `json:"rpc"`
-	Color    string          `json:"color"`
-	Weight   int             `json:"weight"`
-	Version  string          `json:"version"`
-	Metadata json.RawMessage `json:"metadata"`
+	Zone     string            `json:"zone"`
+	Env      string            `json:"env"`
+	Appid    string            `json:"appid"`
+	Treeid   int64             `json:"treeid"`
+	Hostname string            `json:"hostname"`
+	Color    string            `json:"color"`
+	Version  string            `json:"version"`
+	Metadata map[string]string `json:"metadata"`
+	Addrs    []string          `json:"addrs"`
 
 	// Status enum instance status
 	Status uint32 `json:"status"`
@@ -75,16 +73,11 @@ type Instance struct {
 func NewInstance(arg *ArgRegister) (i *Instance) {
 	now := time.Now().UnixNano()
 	i = &Instance{
-		Region:         arg.Region,
 		Zone:           arg.Zone,
 		Env:            arg.Env,
 		Appid:          arg.Appid,
-		Treeid:         arg.Treeid,
 		Hostname:       arg.Hostname,
-		HTTP:           arg.HTTP,
-		RPC:            arg.RPC,
 		Color:          arg.Color,
-		Weight:         arg.Weight,
 		Version:        arg.Version,
 		Status:         arg.Status,
 		RegTimestamp:   now,
@@ -92,95 +85,128 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 		RenewTimestamp: now,
 		DirtyTimestamp: now,
 	}
+	if arg.Metadata != "" {
+		if err := json.Unmarshal([]byte(arg.Metadata), &i.Metadata); err != nil {
+			log.Error("json unmarshal metadata err %v", err)
+		}
+	}
 	return
 }
 
 // InstanceInfo the info get by consumer.
 type InstanceInfo struct {
-	Instances       []*Instance `json:"instances"`
-	LatestTimestamp int64       `json:"latest_timestamp"`
+	Instances       map[string][]*Instance `json:"instances"`
+	LatestTimestamp int64                  `json:"latest_timestamp"`
 }
 
-// Department department distinguished by environment (example: shsb.prob)
-type Department struct {
-	apps map[string]map[string]*App // region.env->appid->hostname
-	lock sync.RWMutex
+// Apps app distinguished by zone
+type Apps struct {
+	apps            map[string]*App
+	lock            sync.RWMutex
+	latestTimestamp int64
 }
 
-// NewDepartment new Department.
-func NewDepartment() (d *Department) {
-	d = &Department{
-		apps: make(map[string]map[string]*App),
+// NewApps return new Apps.
+func NewApps() *Apps {
+	return &Apps{
+		apps: make(map[string]*App),
 	}
-	return
-}
-
-// Apps returns all apps.
-func (d *Department) Apps() (as []*App) {
-	d.lock.RLock()
-	for _, am := range d.apps {
-		for _, a := range am {
-			as = append(as, a)
-		}
-	}
-	d.lock.RUnlock()
-	return
-}
-
-// App find app by region and env.
-func (d *Department) App(region, zone, env, appid string) (a *App, ok bool) {
-	re := eKey(region, zone, env)
-	d.lock.RLock()
-	as, ok := d.apps[re]
-	if ok {
-		a, ok = as[appid]
-	}
-	d.lock.RUnlock()
-	return
 }
 
 // NewApp news a app by appid. If ok=false, returns the app of already exist.
-func (d *Department) NewApp(region, zone, env, appid string, treeid int64) (a *App, new bool) {
-	re := eKey(region, zone, env)
-	d.lock.Lock()
-	as, ok := d.apps[re]
+func (p *Apps) NewApp(zone, appid string, lts int64) (a *App, new bool) {
+	p.lock.Lock()
+	a, ok := p.apps[zone]
 	if !ok {
-		as = make(map[string]*App)
-		d.apps[re] = as
+		a = NewApp(zone, appid)
+		p.apps[zone] = a
 	}
-	if a, ok = as[appid]; !ok {
-		a = NewApp(appid, treeid)
-		as[appid] = a
+	if lts <= p.latestTimestamp {
+		// insure increase
+		lts = p.latestTimestamp + 1
 	}
-	d.lock.Unlock()
+	p.latestTimestamp = lts
+	p.lock.Unlock()
 	new = !ok
 	return
 }
 
-// eKey return region.env
-func eKey(region, zone, env string) string {
-	return fmt.Sprintf("%s.%s.%s", region, zone, env)
+// App get app by zone.
+func (p *Apps) App(zone string) (as []*App) {
+	p.lock.RLock()
+	if zone != "" {
+		a, ok := p.apps[zone]
+		if !ok {
+			p.lock.RUnlock()
+			return
+		}
+		as = []*App{a}
+	} else {
+		for _, a := range p.apps {
+			as = append(as, a)
+		}
+	}
+	p.lock.RUnlock()
+	return
 }
 
-// Del deletes app by region and env.
-func (d *Department) Del(region, zone, env, appid string) {
-	re := eKey(region, zone, env)
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	as, ok := d.apps[re]
-	if !ok {
+// Del del app by zone.
+func (p *Apps) Del(zone string) {
+	p.lock.Lock()
+	delete(p.apps, zone)
+	p.lock.Unlock()
+}
+
+// InstanceInfo return slice of instances.if up is true,return all status instance else return up status instance
+func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *InstanceInfo, err error) {
+	p.lock.RLock()
+	defer p.lock.RUnlock()
+	if latestTime >= p.latestTimestamp {
+		err = errors.NotModified
 		return
 	}
-	delete(as, appid)
-	if len(as) == 0 {
-		delete(d.apps, re)
+	ci = &InstanceInfo{
+		LatestTimestamp: p.latestTimestamp,
+		Instances:       make(map[string][]*Instance),
 	}
+	var ok bool
+	for z, app := range p.apps {
+		if zone == "" || z == zone {
+			ok = true
+			instance := make([]*Instance, 0)
+			for _, i := range app.Instances() {
+				// if up is false return all status instance
+				if i.filter(status) {
+					// if i.Status == InstanceStatusUP && i.LatestTimestamp > latestTime { // TODO(felix): increase
+					ni := new(Instance)
+					*ni = *i
+					instance = append(instance, ni)
+				}
+			}
+			ci.Instances[z] = instance
+		}
+	}
+	if !ok {
+		err = errors.NothingFound
+	} else if len(ci.Instances) == 0 {
+		err = errors.NotModified
+	}
+	return
+}
+
+// UpdateLatest update LatestTimestamp.
+func (p *Apps) UpdateLatest(latestTime int64) {
+	if latestTime <= p.latestTimestamp {
+		// insure increase
+		latestTime = p.latestTimestamp + 1
+	}
+	p.latestTimestamp = latestTime
 }
 
 // App Instances distinguished by hostname
 type App struct {
-	ID              string
-	Treeid          int64
+	AppID           string
+	Zone            string
 	instances       map[string]*Instance
 	latestTimestamp int64
 
@@ -188,10 +214,10 @@ type App struct {
 }
 
 // NewApp new App.
-func NewApp(appid string, treeid int64) (a *App) {
+func NewApp(zone, appid string) (a *App) {
 	a = &App{
-		ID:        appid,
-		Treeid:    treeid,
+		AppID:     appid,
+		Zone:      zone,
 		instances: make(map[string]*Instance),
 	}
 	return
@@ -210,29 +236,6 @@ func (a *App) Instances() (is []*Instance) {
 	return
 }
 
-// InstanceInfo return slice of instances.if up is true,return all status instance else return up status instance
-func (a *App) InstanceInfo(latestTime int64, status uint32) (ci *InstanceInfo, ok bool) {
-	a.lock.RLock()
-	defer a.lock.RUnlock()
-	if latestTime >= a.latestTimestamp {
-		return
-	}
-	ci = &InstanceInfo{
-		LatestTimestamp: a.latestTimestamp,
-	}
-	for _, i := range a.instances {
-		// if up is false return all status instance
-		if i.filter(status) {
-			// if i.Status == InstanceStatusUP && i.LatestTimestamp > latestTime { // TODO(felix): increase
-			ni := new(Instance)
-			*ni = *i
-			ci.Instances = append(ci.Instances, ni)
-		}
-	}
-	ok = true
-	return
-}
-
 // NewInstance new a instance.
 func (a *App) NewInstance(ni *Instance, latestTime int64) (i *Instance, ok bool) {
 	i = new(Instance)
@@ -241,19 +244,12 @@ func (a *App) NewInstance(ni *Instance, latestTime int64) (i *Instance, ok bool)
 	if ok {
 		ni.UpTimestamp = oi.UpTimestamp
 		if ni.DirtyTimestamp < oi.DirtyTimestamp {
-
 			log.Warn("register exist(%v) dirty timestamp over than caller(%v)", oi, ni)
 			ni = oi
 		}
 	}
 	a.instances[ni.Hostname] = ni
-	if latestTime == 0 {
-		latestTime = time.Now().UnixNano()
-	}
-	ni.LatestTimestamp = latestTime
-	if latestTime > a.latestTimestamp {
-		a.latestTimestamp = latestTime
-	}
+	a.updateLatest(latestTime)
 	*i = *ni
 	a.lock.Unlock()
 	ok = !ok
@@ -274,6 +270,14 @@ func (a *App) Renew(hostname string) (i *Instance, ok bool) {
 	return
 }
 
+func (a *App) updateLatest(latestTime int64) {
+	if latestTime <= a.latestTimestamp {
+		// insure increase
+		latestTime = a.latestTimestamp + 1
+	}
+	a.latestTimestamp = latestTime
+}
+
 // Cancel cancel a instance.
 func (a *App) Cancel(hostname string, latestTime int64) (i *Instance, l int, ok bool) {
 	i = new(Instance)
@@ -285,11 +289,8 @@ func (a *App) Cancel(hostname string, latestTime int64) (i *Instance, l int, ok 
 	}
 	delete(a.instances, hostname)
 	l = len(a.instances)
-	if latestTime == 0 {
-		latestTime = time.Now().UnixNano()
-	}
 	oi.LatestTimestamp = latestTime
-	a.latestTimestamp = latestTime
+	a.updateLatest(latestTime)
 	*i = *oi
 	return
 }
@@ -333,7 +334,7 @@ func (a *App) SetStatus(changes map[string]uint32, setTime int64) (ok bool) {
 			dst.UpTimestamp = setTime
 		}
 	}
-	a.latestTimestamp = setTime
+	a.updateLatest(setTime)
 	return
 }
 
@@ -351,16 +352,15 @@ func (a *App) SetWeight(changes map[string]int, setTime int64) (ok bool) {
 	if setTime == 0 {
 		setTime = time.Now().UnixNano()
 	}
-	for hostname, weight := range changes {
+	for hostname := range changes {
 		if dst, ok = a.instances[hostname]; !ok {
 			log.Error("setWeight hostname(%s) not found", hostname)
 			return // NOTE: impossible~~~
 		}
-		dst.Weight = weight
 		dst.LatestTimestamp = setTime
 		dst.DirtyTimestamp = setTime
 	}
-	a.latestTimestamp = setTime
+	a.updateLatest(setTime)
 	return
 }
 
@@ -387,6 +387,6 @@ func (a *App) SetColor(changes map[string]string, setTime int64) (ok bool) {
 		dst.LatestTimestamp = setTime
 		dst.DirtyTimestamp = setTime
 	}
-	a.latestTimestamp = setTime
+	a.updateLatest(setTime)
 	return
 }

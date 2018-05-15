@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -21,8 +20,8 @@ const (
 
 // Registry handles replication of all operations to peer Discovery nodes to keep them all in sync.
 type Registry struct {
-	dm    map[string]*model.Department // department->env->appid->hostname
-	dLock sync.RWMutex
+	appm  map[string]*model.Apps // appid-env -> apps
+	aLock sync.RWMutex
 
 	conns map[string]map[string]*conn // region.zone.env.appid-> host
 	pool  sync.Pool
@@ -32,66 +31,57 @@ type Registry struct {
 
 // conn the poll chan contains consumer.
 type conn struct {
-	ch         chan map[int64]*model.InstanceInfo // TODO(felix): increase
+	ch         chan map[string]*model.InstanceInfo // TODO(felix): increase
+	arg        *model.ArgPolls
 	latestTime int64
 }
 
 // newConn new consumer chan.
-func newConn(ch chan map[int64]*model.InstanceInfo, latestTime int64) *conn {
-	return &conn{ch: ch, latestTime: latestTime}
+func newConn(ch chan map[string]*model.InstanceInfo, latestTime int64, arg *model.ArgPolls) *conn {
+	return &conn{ch: ch, latestTime: latestTime, arg: arg}
 }
 
 // NewRegistry new register.
 func NewRegistry() (r *Registry) {
 	r = &Registry{
-		dm:    make(map[string]*model.Department),
+		appm:  make(map[string]*model.Apps),
 		conns: make(map[string]map[string]*conn),
 		gd:    new(Guard),
-		pool:  sync.Pool{New: func() interface{} { return make(chan map[int64]*model.InstanceInfo, 1) }},
+		pool:  sync.Pool{New: func() interface{} { return make(chan map[string]*model.InstanceInfo, 1) }},
 	}
 	go r.proc()
 	return
 }
 
-func (r *Registry) newDepartment(appid string) (d *model.Department, ok bool) {
-	dep := dep(appid)
-	r.dLock.Lock()
-	if d, ok = r.dm[dep]; !ok {
-		d = model.NewDepartment()
-		r.dm[dep] = d
+func (r *Registry) newapps(appid, env string) (a *model.Apps, ok bool) {
+	key := appsKey(appid, env)
+	r.aLock.Lock()
+	if a, ok = r.appm[key]; !ok {
+		a = model.NewApps()
+		r.appm[key] = a
 	}
-	r.dLock.Unlock()
+	r.aLock.Unlock()
 	return
 }
 
-func (r *Registry) department(appid string) (d *model.Department, ok bool) {
-	dep := dep(appid)
-	r.dLock.RLock()
-	d, ok = r.dm[dep]
-	r.dLock.RUnlock()
+func (r *Registry) apps(appid, env, zone string) (as []*model.App, a *model.Apps, ok bool) {
+	key := appsKey(appid, env)
+	r.aLock.RLock()
+	a, ok = r.appm[key]
+	r.aLock.RUnlock()
+	if ok {
+		as = a.App(zone)
+	}
 	return
 }
 
-// get the department of appid
-func dep(appid string) (dep string) {
-	dep = appid
-	if strings.Count(appid, ".") == 2 {
-		dep = appid[:strings.LastIndexByte(appid, '.')]
-	}
-	return
+func appsKey(appid, env string) string {
+	return fmt.Sprintf("%s-%s", appid, env)
 }
 
 func (r *Registry) newApp(ins *model.Instance) (a *model.App) {
-	d, _ := r.newDepartment(ins.Appid)
-	a, _ = d.NewApp(ins.Region, ins.Zone, ins.Env, ins.Appid, ins.Treeid)
-	return
-}
-
-func (r *Registry) app(region, zone, env, appid string) (a *model.App, d *model.Department, ok bool) {
-	if d, ok = r.department(appid); !ok {
-		return
-	}
-	a, ok = d.App(region, zone, env, appid)
+	as, _ := r.newapps(ins.Appid, ins.Env)
+	a, _ = as.NewApp(ins.Zone, ins.Appid, ins.LatestTimestamp)
 	return
 }
 
@@ -103,17 +93,17 @@ func (r *Registry) Register(ins *model.Instance, latestTime int64) (err error) {
 		r.gd.incrExp()
 	}
 	// NOTE: make sure free poll before update appid latest timestamp.
-	r.broadcast(i.Region, i.Zone, i.Env, i.Appid, a)
+	r.broadcast(i.Zone, i.Env, i.Appid, a)
 	return
 }
 
 // Renew marks the given instance of the given app name as renewed, and also marks whether it originated from replication.
 func (r *Registry) Renew(arg *model.ArgRenew) (i *model.Instance, ok bool) {
-	a, _, ok := r.app(arg.Region, arg.Zone, arg.Env, arg.Appid)
-	if !ok {
+	a, _, _ := r.apps(arg.Appid, arg.Env, arg.Zone)
+	if len(a) == 0 {
 		return
 	}
-	if i, ok = a.Renew(arg.Hostname); !ok {
+	if i, ok = a[0].Renew(arg.Hostname); !ok {
 		return
 	}
 	r.gd.incrFac()
@@ -122,86 +112,81 @@ func (r *Registry) Renew(arg *model.ArgRenew) (i *model.Instance, ok bool) {
 
 // Cancel cancels the registration of an instance.
 func (r *Registry) Cancel(arg *model.ArgCancel) (i *model.Instance, ok bool) {
-	if i, ok = r.cancel(arg.Region, arg.Zone, arg.Env, arg.Appid, arg.Hostname, arg.LatestTimestamp); !ok {
+	if i, ok = r.cancel(arg.Zone, arg.Env, arg.Appid, arg.Hostname, arg.LatestTimestamp); !ok {
 		return
 	}
 	r.gd.decrExp()
 	return
 }
 
-func (r *Registry) cancel(region, zone, env, appid, hostname string, latestTime int64) (i *model.Instance, ok bool) {
+func (r *Registry) cancel(zone, env, appid, hostname string, latestTime int64) (i *model.Instance, ok bool) {
 	var l int
-	a, d, ok := r.app(region, zone, env, appid)
-	if !ok {
+	a, as, _ := r.apps(appid, env, zone)
+	if len(a) == 0 {
 		return
 	}
-	if i, l, ok = a.Cancel(hostname, latestTime); !ok {
+	if i, l, ok = a[0].Cancel(hostname, latestTime); !ok {
 		return
 	}
+	as.UpdateLatest(latestTime)
 	if l == 0 {
-		r.dLock.Lock()
-		if a.Len() == 0 {
-			d.Del(region, zone, env, appid)
+		if a[0].Len() == 0 {
+			as.Del(zone)
 		}
-		r.dLock.Unlock()
 	}
-	r.broadcast(region, zone, env, appid, a) // NOTE: make sure free poll before update appid latest timestamp.
+	if len(as.App("")) == 0 {
+		r.aLock.Lock()
+		delete(r.appm, appsKey(appid, env))
+		r.aLock.Unlock()
+	}
+	r.broadcast(zone, env, appid, a[0]) // NOTE: make sure free poll before update appid latest timestamp.
 	return
 }
 
 // FetchAll fetch all instances of all the families.
 func (r *Registry) FetchAll() (im map[string][]*model.Instance) {
+	ass := r.allapp()
 	im = make(map[string][]*model.Instance)
-	for _, d := range r.registry() {
-		for _, a := range d.Apps() {
-			im[a.ID] = a.Instances()
+	for _, as := range ass {
+		for _, a := range as.App("") {
+			im[a.AppID] = append(im[a.AppID], a.Instances()...)
 		}
 	}
 	return
 }
 
-// return all instances
-func (r *Registry) registry() (ds []*model.Department) {
-	r.dLock.RLock()
-	ds = make([]*model.Department, 0, len(r.dm))
-	for _, d := range r.dm {
-		ds = append(ds, d)
-	}
-	r.dLock.RUnlock()
-	return ds
-}
-
 // Fetch fetch all instances by appid.
-func (r *Registry) Fetch(region, zone, env, appid string, latestTime int64, status uint32) (info *model.InstanceInfo, err error) {
-	a, _, ok := r.app(region, zone, env, appid)
+func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint32) (info *model.InstanceInfo, err error) {
+	key := appsKey(appid, env)
+	r.aLock.RLock()
+	a, ok := r.appm[key]
+	r.aLock.RUnlock()
 	if !ok {
 		err = errors.NothingFound
 		return
 	}
-	if info, ok = a.InstanceInfo(latestTime, status); !ok {
-		err = errors.NotModified
-	}
+	info, err = a.InstanceInfo(zone, latestTime, status)
 	return
 }
 
 // Polls hangs request and then write instances when that has changes, or return NotModified.
-func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[int64]*model.InstanceInfo, new bool, err error) {
+func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, err error) {
 	var (
-		ins = make(map[int64]*model.InstanceInfo, len(arg.Treeid))
+		ins = make(map[string]*model.InstanceInfo, len(arg.Appid))
 		in  *model.InstanceInfo
 	)
 	if len(arg.Appid) != len(arg.LatestTimestamp) {
 		arg.LatestTimestamp = make([]int64, len(arg.Appid))
 	}
-	ch = r.pool.Get().(chan map[int64]*model.InstanceInfo)
+	ch = r.pool.Get().(chan map[string]*model.InstanceInfo)
 	for i := range arg.Appid {
-		in, err = r.Fetch(arg.Region, arg.Zone, arg.Env, arg.Appid[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
+		in, err = r.Fetch(arg.Zone, arg.Env, arg.Appid[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
 		if err == errors.NothingFound {
-			log.Error("Polls region(%s) zone(%s) env(%s) appid(%s) error(%v)", arg.Region, arg.Zone, arg.Env, arg.Appid[i], err)
+			log.Error("Polls zone(%s) env(%s) appid(%s) error(%v)", arg.Zone, arg.Env, arg.Appid[i], err)
 			return
 		}
 		if err == nil {
-			ins[arg.Treeid[i]] = in
+			ins[arg.Appid[i]] = in
 			new = true
 		}
 	}
@@ -210,10 +195,10 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[int64]*model.Instance
 		return
 	}
 	r.cLock.Lock()
-	ch = r.pool.Get().(chan map[int64]*model.InstanceInfo)
+	ch = r.pool.Get().(chan map[string]*model.InstanceInfo)
 	for i := range arg.Appid {
-		k := pollKey(arg.Region, arg.Zone, arg.Env, arg.Appid[i])
-		connection := newConn(ch, arg.LatestTimestamp[i])
+		k := pollKey(arg.Env, arg.Appid[i])
+		connection := newConn(ch, arg.LatestTimestamp[i], arg)
 		if _, ok := r.conns[k]; !ok {
 			r.conns[k] = make(map[string]*conn, 1)
 		}
@@ -225,8 +210,8 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[int64]*model.Instance
 
 // broadcast on poll by chan.
 // NOTE: make sure free poll before update appid latest timestamp.
-func (r *Registry) broadcast(region, zone, env, appid string, a *model.App) {
-	key := pollKey(region, zone, env, appid)
+func (r *Registry) broadcast(zone, env, appid string, a *model.App) {
+	key := pollKey(env, appid)
 	r.cLock.Lock()
 	conns, ok := r.conns[key]
 	if !ok {
@@ -235,25 +220,24 @@ func (r *Registry) broadcast(region, zone, env, appid string, a *model.App) {
 	}
 	delete(r.conns, key)
 	r.cLock.Unlock()
-	ci, _ := a.InstanceInfo(0, model.InstanceStatusUP) // TODO(felix): increase
 	for _, conn := range conns {
-		// c, ok := a.Consumer(cch.LatestTime) // TODO(felix): increase
+		ii, _ := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
 		select {
-		case conn.ch <- map[int64]*model.InstanceInfo{a.Treeid: ci}: // NOTE: if chan is full, means no poller.
+		case conn.ch <- map[string]*model.InstanceInfo{a.AppID: ii}: // NOTE: if chan is full, means no poller.
 		default:
-			log.Error("s.broadcast err, channel full(%v)", ci)
+			log.Error("s.broadcast err, channel full(%v)", ii)
 		}
 	}
 }
 
-func pollKey(region, zone, env, appid string) string {
-	return fmt.Sprintf("%s.%s.%s.%s", region, zone, env, appid)
+func pollKey(env, appid string) string {
+	return fmt.Sprintf("%s.%s", env, appid)
 }
 
 // Set Set the status of instance by hostnames.
 func (r *Registry) Set(action model.Action, region, zone, env, appid string, changes map[string]string, setTime int64) (ok bool) {
-	a, _, ok := r.app(region, zone, env, appid)
-	if !ok {
+	a, _, _ := r.apps(appid, env, zone)
+	if len(a) == 0 {
 		return
 	}
 	switch action {
@@ -263,7 +247,7 @@ func (r *Registry) Set(action model.Action, region, zone, env, appid string, cha
 			tmp, _ := strconv.ParseUint(v, 10, 32)
 			cs[k] = uint32(tmp)
 		}
-		if ok = a.SetStatus(cs, setTime); !ok {
+		if ok = a[0].SetStatus(cs, setTime); !ok {
 			return
 		}
 	case model.Weight:
@@ -271,23 +255,33 @@ func (r *Registry) Set(action model.Action, region, zone, env, appid string, cha
 		for k, v := range changes {
 			cs[k], _ = strconv.Atoi(v)
 		}
-		if ok = a.SetWeight(cs, setTime); !ok {
+		if ok = a[0].SetWeight(cs, setTime); !ok {
 			return
 		}
 	case model.Color:
-		if ok = a.SetColor(changes, setTime); !ok {
+		if ok = a[0].SetColor(changes, setTime); !ok {
 			return
 		}
 	}
-	r.broadcast(region, zone, env, appid, a)
+	r.broadcast(zone, env, appid, a[0])
+	return
+}
+
+func (r *Registry) allapp() (ass []*model.Apps) {
+	r.aLock.RLock()
+	ass = make([]*model.Apps, 0, len(r.appm))
+	for _, as := range r.appm {
+		ass = append(ass, as)
+	}
+	r.aLock.RUnlock()
 	return
 }
 
 // reset expect renews, count the renew of all app, one app has two expect remews in minute.
 func (r *Registry) resetExp() {
 	cnt := int64(0)
-	for _, p := range r.registry() {
-		for _, a := range p.Apps() {
+	for _, p := range r.allapp() {
+		for _, a := range p.App("") {
 			cnt += int64(a.Len())
 		}
 	}
@@ -316,9 +310,9 @@ func (r *Registry) evict() {
 	var eis []*model.Instance
 	var registrySize int
 	// all projects
-	ps := r.registry()
-	for _, p := range ps {
-		for _, a := range p.Apps() {
+	ass := r.allapp()
+	for _, as := range ass {
+		for _, a := range as.App("") {
 			registrySize += a.Len()
 			is := a.Instances()
 			for _, i := range is {
@@ -345,7 +339,7 @@ func (r *Registry) evict() {
 		next := i + rand.Intn(len(eis)-i)
 		eis[i], eis[next] = eis[next], eis[i]
 		ei := eis[i]
-		r.cancel(ei.Region, ei.Zone, ei.Env, ei.Appid, ei.Hostname, ei.LatestTimestamp)
+		r.cancel(ei.Zone, ei.Env, ei.Appid, ei.Hostname, time.Now().UnixNano())
 	}
 }
 
@@ -354,7 +348,7 @@ func (r *Registry) DelConns(arg *model.ArgPolls) {
 	var connection *conn
 	r.cLock.Lock()
 	for i := range arg.Appid {
-		k := pollKey(arg.Region, arg.Zone, arg.Env, arg.Appid[i])
+		k := pollKey(arg.Env, arg.Appid[i])
 		conns, ok := r.conns[k]
 		if !ok {
 			log.Warn("DelConn key(%s) not found", k)
@@ -375,6 +369,6 @@ func (r *Registry) DelConns(arg *model.ArgPolls) {
 }
 
 // PutChan put chan into pool.
-func (r *Registry) PutChan(ch chan map[int64]*model.InstanceInfo) {
+func (r *Registry) PutChan(ch chan map[string]*model.InstanceInfo) {
 	r.pool.Put(ch)
 }

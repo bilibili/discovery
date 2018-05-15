@@ -28,18 +28,14 @@ func register(c *gin.Context) {
 	}
 	i := model.NewInstance(arg)
 	if i.Status == 0 || i.Status > 2 {
-		c.JSON(200, resp{
-			Code: -400,
-		})
+		result(c, nil, errors.ParamsErr)
+		log.Error("register params status invalid")
 		return
 	}
 	if arg.Metadata != "" {
-		i.Metadata = json.RawMessage([]byte(arg.Metadata))
 		// check the metadata type is json
 		if !json.Valid([]byte(arg.Metadata)) {
-			c.JSON(200, resp{
-				Code: -400,
-			})
+			result(c, nil, errors.ParamsErr)
 			log.Error("register params() metadata(%v) invalid json", arg.Metadata)
 			return
 		}
@@ -49,7 +45,7 @@ func register(c *gin.Context) {
 		i.DirtyTimestamp = arg.DirtyTimestamp
 	}
 	svr.Register(c, i, arg)
-	c.JSON(200, resp{})
+	result(c, nil, nil)
 }
 
 func renew(c *gin.Context) {
@@ -59,52 +55,38 @@ func renew(c *gin.Context) {
 	}
 	// renew
 	instance, err := svr.Renew(c, arg)
-	if err != nil {
-		c.JSON(200, resp{
-			Code: errors.Code(err),
-		})
-		return
-	}
-	c.JSON(200, resp{
-		Data: instance,
-	})
+	result(c, instance, err)
 }
 
 func cancel(c *gin.Context) {
 	arg := new(model.ArgCancel)
 	if err := c.Bind(arg); err != nil {
-		c.JSON(200, resp{
-			Code: -400,
-		})
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	// cancel
-	if err := svr.Cancel(c, arg); err != nil {
-		c.JSON(200, resp{
-			Code: errors.Code(err),
-		})
-		return
-	}
-	c.JSON(200, resp{})
+	result(c, nil, svr.Cancel(c, arg))
+}
+
+func result(c *gin.Context, data interface{}, err error) {
+	c.JSON(200, resp{
+		Code: errors.Code(err),
+		Data: data,
+	})
 }
 
 func fetchAll(c *gin.Context) {
-	c.JSON(200, resp{Data: svr.FetchAll(c)})
+	result(c, svr.FetchAll(c), nil)
 }
 
 func fetch(c *gin.Context) {
 	arg := new(model.ArgFetch)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	insInfo, err := svr.Fetch(c, arg)
-	if err != nil {
-		c.JSON(200, resp{
-			Code: errors.Code(err),
-		})
-		return
-	}
-	c.JSON(200, resp{Data: insInfo})
+	result(c, insInfo, err)
 }
 
 func poll(c *gin.Context) {
@@ -112,34 +94,22 @@ func poll(c *gin.Context) {
 	if err := c.Bind(arg); err != nil {
 		return
 	}
-	if len(arg.Treeid) != 1 {
-		c.JSON(200, resp{
-			Code: -400,
-		})
-		return
-	}
 	ch, _, err := svr.Polls(c, arg)
 	if err != nil && err != errors.NotModified {
-		c.JSON(200, resp{
-			Code: errors.Code(err),
-		})
+		result(c, nil, err)
 		return
 	}
 	// wait for instance change
 	select {
 	case e := <-ch:
-		c.JSON(200, resp{Data: e[arg.Treeid[0]]})
+		result(c, resp{Data: e[arg.Appid[0]]}, nil)
 		svr.PutChan(ch)
 		// broadcast will delete all connections of appid
 	case <-time.After(_pollWaitSecond):
-		c.JSON(200, resp{
-			Code: -304,
-		})
+		result(c, nil, errors.NotModified)
 		svr.DelConns(arg)
 	case <-c.Writer.(http.CloseNotifier).CloseNotify():
-		c.JSON(200, resp{
-			Code: -304,
-		})
+		result(c, nil, errors.NotModified)
 		svr.DelConns(arg)
 	}
 }
@@ -149,25 +119,19 @@ func polls(c *gin.Context) {
 	if err := c.Bind(arg); err != nil {
 		return
 	}
-	if len(arg.Treeid) != len(arg.LatestTimestamp) && len(arg.Appid) != len(arg.LatestTimestamp) {
-		c.JSON(200, resp{
-			Code: -400,
-		})
+	if len(arg.Appid) != len(arg.LatestTimestamp) {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	ch, new, err := svr.Polls(c, arg)
 	if err != nil && err != errors.NotModified {
-		c.JSON(200, resp{
-			Code: errors.Code(err),
-		})
+		result(c, nil, err)
 		return
 	}
 	// wait for instance change
 	select {
 	case e := <-ch:
-		c.JSON(200, resp{
-			Data: e,
-		})
+		result(c, e, nil)
 		if new {
 			svr.PutChan(ch)
 		} else {
@@ -175,14 +139,10 @@ func polls(c *gin.Context) {
 		}
 		// broadcast will delete all connections of appid
 	case <-time.After(_pollWaitSecond):
-		c.JSON(200, resp{
-			Code: -304,
-		})
+		result(c, nil, errors.NotModified)
 		svr.DelConns(arg)
 	case <-c.Writer.(http.CloseNotifier).CloseNotify():
-		c.JSON(200, resp{
-			Code: -304,
-		})
+		result(c, nil, errors.NotModified)
 		svr.DelConns(arg)
 	}
 }

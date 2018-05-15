@@ -11,6 +11,7 @@ type ecode int
 
 var (
 	ServerErr    ecode = -500
+	ParamsErr    ecode = -400
 	NothingFound ecode = -404
 	NotModified  ecode = -304
 	Conflict     ecode = -409

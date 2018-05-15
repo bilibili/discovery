@@ -68,33 +68,11 @@ func (s *Service) FetchAll(c context.Context) (im map[string][]*model.Instance) 
 
 // Fetch fetch all instances by appid.
 func (s *Service) Fetch(c context.Context, arg *model.ArgFetch) (info *model.InstanceInfo, err error) {
-	var appid string
-	if arg.Treeid != 0 {
-		s.tLock.RLock()
-		appid = s.tree[arg.Treeid]
-		s.tLock.RUnlock()
-	}
-	if appid == "" {
-		appid = arg.Appid
-	}
-	return s.registry.Fetch(arg.Region, arg.Zone, arg.Env, appid, 0, arg.Status)
+	return s.registry.Fetch(arg.Zone, arg.Env, arg.Appid, 0, arg.Status)
 }
 
 // Polls hangs request and then write instances when that has changes, or return NotModified.
-func (s *Service) Polls(c context.Context, arg *model.ArgPolls) (ch chan map[int64]*model.InstanceInfo, new bool, err error) {
-	var appids []string
-	s.tLock.RLock()
-	if len(arg.Treeid) > 0 {
-		appids = make([]string, 0, len(arg.Treeid))
-	}
-	for _, tid := range arg.Treeid {
-		appid := s.tree[tid]
-		appids = append(appids, appid)
-	}
-	s.tLock.RUnlock()
-	if len(appids) != 0 {
-		arg.Appid = appids
-	}
+func (s *Service) Polls(c context.Context, arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, err error) {
 	return s.registry.Polls(arg)
 }
 
@@ -117,6 +95,6 @@ func (s *Service) updateNodes() {
 }
 
 // PutChan put chan into pool.
-func (s *Service) PutChan(ch chan map[int64]*model.InstanceInfo) {
+func (s *Service) PutChan(ch chan map[string]*model.InstanceInfo) {
 	s.registry.PutChan(ch)
 }

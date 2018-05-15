@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	log "golang/log4go"
 
@@ -79,10 +80,8 @@ func (n *Node) Renew(c context.Context, i *model.Instance) (err error) {
 
 func (n *Node) call(c context.Context, action model.Action, i *model.Instance, uri string, data interface{}) (err error) {
 	params := url.Values{}
-	params.Set("region", i.Region)
 	params.Set("zone", i.Zone)
 	params.Set("env", i.Env)
-	params.Set("treeid", strconv.FormatInt(i.Treeid, 10))
 	params.Set("appid", i.Appid)
 	params.Set("hostname", i.Hostname)
 	if n.otherZone {
@@ -92,13 +91,12 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 	}
 	switch action {
 	case model.Register:
-		params.Set("http", i.HTTP)
-		params.Set("rpc", i.RPC)
+		params.Set("addrs", strings.Join(i.Addrs, ","))
 		params.Set("status", strconv.FormatUint(uint64(i.Status), 10))
 		params.Set("color", i.Color)
-		params.Set("weight", strconv.Itoa(i.Weight))
 		params.Set("version", i.Version)
-		params.Set("metadata", string(i.Metadata))
+		meta, _ := json.Marshal(i.Metadata)
+		params.Set("metadata", string(meta))
 		params.Set("reg_timestamp", strconv.FormatInt(i.RegTimestamp, 10))
 		params.Set("dirty_timestamp", strconv.FormatInt(i.DirtyTimestamp, 10))
 		params.Set("latest_timestamp", strconv.FormatInt(i.LatestTimestamp, 10))
