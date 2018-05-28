@@ -7,12 +7,14 @@ type Error interface {
 	error
 	// Code get error code.
 	Code() int
+	Equal(error) bool
 }
 
 type ecode int
 
 // ecode error.
 var (
+	OK           ecode = 0
 	NotModified  ecode = -304
 	ParamsErr    ecode = -400
 	NothingFound ecode = -404
@@ -28,6 +30,11 @@ func (e ecode) Code() int {
 	return int(e)
 }
 
+func (e ecode) Equal(err error) bool {
+	cd := Code(err)
+	return e.Code() == cd.Code()
+}
+
 // Code converts error to ecode.
 func Code(e error) (ie Error) {
 	if e == nil {
@@ -39,4 +46,9 @@ func Code(e error) (ie Error) {
 	}
 	ie = ecode(i)
 	return
+}
+
+// Int converts int to ecode.
+func Int(i int) (ie Error) {
+	return ecode(i)
 }
