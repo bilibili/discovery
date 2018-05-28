@@ -7,6 +7,10 @@ go:
 
 go_import_path: github.com/Bilibili/discovery
 
+install:
+  - go get -u github.com/alecthomas/gometalinter
+  - gometalinter --install
+
 script:
   - gometalinter --vendor --disable-all --enable=gosimple --enable=golint --enable=vet --enable=ineffassign --enable=unconvert \
     --exclude="by other packages, and that stutters; consider calling this" \
