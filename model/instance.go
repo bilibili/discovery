@@ -312,7 +312,7 @@ func (a *App) SetStatus(changes map[string]uint32, setTime int64) (ok bool) {
 			return
 		}
 		if s != InstanceStatusUP && s != InstancestatusWating {
-			log.Errorf("SetWeight change status(%s) is error", s)
+			log.Errorf("SetWeight change status(%d) is error", s)
 			ok = false
 			return
 		}
