@@ -1,0 +1,18 @@
+language: go
+
+go:
+  - 1.7.x
+  - 1.8.x
+  - 1.9.x
+
+go_import_path: github.com/Bilibili/discovery
+
+script:
+  - gometalinter --vendor --disable-all --enable=gosimple --enable=golint --enable=vet --enable=ineffassign --enable=unconvert \
+    --exclude="by other packages, and that stutters; consider calling this" \
+    --skip=proto \
+    --skip=vendor \
+    --skip=.git \
+    --tests ./...
+  - cd cmd
+  - go build
