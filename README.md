@@ -17,7 +17,7 @@ _补充资料：[Why You Shouldn’t Use ZooKeeper for Service Discovery](https:
 
 ## 设计目标
 
-Netflix Eureka简直是服务注册发现领域AP系统的标杆，我们打算大力借（抄）鉴（袭）~~
+Netflix Eureka简直是服务注册发现领域AP系统的标杆，我们打算大力借（chao）鉴（xi）~~
 
 1. 实现AP类型服务注册发现系统，在可用性极极极极强的情况下，努力保证数据最终一致性
 2. 与公司k8s平台深度结合，注册打通、发布平滑、naming service等等
