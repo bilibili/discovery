@@ -4,7 +4,7 @@ Discovery is a based service that is production-ready and primarily used at [Bil
 
 ## 背景
 
-* 团队是B站主站技术部，技术栈为Go
+* 团队是B站主站技术，位于上海的狂热Gopher
 * 之前一直使用zookeeper作为服务注册发现中间件，但由于zookeeper：
     * Java系，在我们这群基佬Gopher看来太重、维护不动、无法二次开发
     * CP系统，对于微服务的服务注册发现，其实不如一套AP系统更可用
@@ -13,7 +13,7 @@ Discovery is a based service that is production-ready and primarily used at [Bil
     * consul一直被运维小锅用于nginx+upsync，坑多让我们慎用
     * etcd相对来说是k8s体系，非常合适，但讨论下来，我们更想要一套纯纯的AP系统，无视kv。。
 
-_补充资料[Why You Shouldn’t Use ZooKeeper for Service Discovery](https://medium.com/knerd/eureka-why-you-shouldnt-use-zookeeper-for-service-discovery-4932c5c7e764)_
+_补充资料：[Why You Shouldn’t Use ZooKeeper for Service Discovery](https://medium.com/knerd/eureka-why-you-shouldnt-use-zookeeper-for-service-discovery-4932c5c7e764)_
 
 ## 设计目标
 
