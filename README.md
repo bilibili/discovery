@@ -20,7 +20,7 @@ _补充资料：[Why You Shouldn’t Use ZooKeeper for Service Discovery](https:
 Netflix Eureka简直是服务注册发现领域AP系统的标杆，我们打算大力借（抄）鉴（袭）~~
 
 1. 实现AP类型服务注册发现系统，在可用性极极极极强的情况下，努力保证数据最终一致性
-2. 与公司k8s平台深度结合，注册打通、发布平滑、naming service(有bdns服务，敬请期待开源)等等
+2. 与公司k8s平台深度结合，注册打通、发布平滑、naming service(有bns服务...bilibili naming service，敬请期待开源)等等
 3. 网络闪断等异常情况，可自我保护，保证每个节点可用
 4. 基于HTTP协议实现接口，简单易用，维护各流行语言SDK
     * Go SDK请看仓库内naming目录
