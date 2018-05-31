@@ -24,7 +24,7 @@ Netflix Eureka简直是服务注册发现领域AP系统的标杆，我们打算�
 3. 网络闪断等异常情况，可自我保护，保证每个节点可用
 4. 基于HTTP协议实现接口，简单易用，维护各流行语言SDK
     1. Go SDK请看仓库内naming目录
-    2. Java SDK请看仓库[DiscoveryJavaSDK](https://github.com/coreos/etcd)
+    2. Java SDK请看仓库[DiscoveryJavaSDK](https://github.com/felixhao/DiscoveryJavaSDK)
 
 ## 设计概览
 
