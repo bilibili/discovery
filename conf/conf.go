@@ -4,7 +4,6 @@ import (
 	"flag"
 
 	"github.com/Bilibili/discovery/lib/http"
-	"github.com/Bilibili/discovery/lib/time"
 	"github.com/BurntSushi/toml"
 )
 
@@ -25,10 +24,7 @@ type Config struct {
 
 // ServerConfig Http Servers conf.
 type ServerConfig struct {
-	Addr         string
-	Timeout      time.Duration
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
+	Addr string
 }
 
 func init() {
