@@ -25,9 +25,9 @@ go build
 
 ### 客户端 
 
-[API文档](api.md)
-[GoSDK](naming/client.go)
-[JavaSDK](http://git.bilibili.co/wanghuan01/discovery)
+* [API文档](api.md)
+* [GoSDK](naming/client.go)
+* [JavaSDK](https://github.com/flygit/discoveryJavaSDK)
 
 ## 背景及设计
 
