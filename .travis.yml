@@ -17,5 +17,5 @@ script:
     --skip=vendor \
     --skip=.git \
     --tests ./...
-  - cd cmd
+  - cd cmd/discovery
   - go build

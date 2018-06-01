@@ -4,6 +4,10 @@ Discovery is a based service that is production-ready and primarily used at [Bil
 
 ## 快速开始
 
+### 环境
+
+请使用go1.9.x及以上版本
+
 ### 构建
 ```shell
 cd $GOPATH
