@@ -23,9 +23,11 @@ go build
 
 请详细查看`discovery-example.toml`内注释说明
 
-## API文档
+### 客户端 
 
-[API](api.md)
+[API文档](api.md)
+[GoSDK](naming/client.go)
+[JavaSDK](http://git.bilibili.co/wanghuan01/discovery)
 
 ## 背景及设计
 
