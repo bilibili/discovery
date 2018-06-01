@@ -1,17 +1,4 @@
 
-- [API文档](#api)
-    - [字段定义](#)
-    - [错误码定义](#)
-    - [注册register](#register)
-    - [心跳renew](#renew)
-    - [下线cancel](#cancel)
-    - [获取实例fetch](#fetch)
-    - [批量获取实例fetchs](#fetchs)
-    - [长轮询获取实例poll](#poll)
-    - [长轮询批量获取实例polls](#polls)
-    - [获取node节点](#node)
-
-## API文档
 
 ### 字段定义
 
