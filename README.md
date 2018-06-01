@@ -23,7 +23,7 @@ go build
 ./discovry -conf discovery-example.toml
 ```
 
-### 配置文件解析
+### 配置文件解读
 
 请详细查看`discovery-example.toml`内注释说明
 
@@ -41,4 +41,4 @@ go build
 
 请加微信
 
-![wechat](discovery_wechat.png)
+<img width="200" height="200" src="discovery_wechat.png" />
