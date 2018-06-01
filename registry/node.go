@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Bilibili/discovery/conf"
+	"github.com/Bilibili/discovery/errors"
 	"github.com/Bilibili/discovery/lib/http"
 	"github.com/Bilibili/discovery/model"
 	log "github.com/golang/glog"
@@ -48,6 +49,7 @@ func newNode(c *conf.Config, addr string) (n *Node) {
 		cancelURL:   fmt.Sprintf("http://%s%s", addr, _cancelURL),
 		renewURL:    fmt.Sprintf("http://%s%s", addr, _renewURL),
 		setURL:      fmt.Sprintf("http://%s%s", addr, _setURL),
+		client:      http.NewClient(c.HTTPClient),
 		status:      model.NodeStatusLost,
 	}
 	return
@@ -114,7 +116,7 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 	}
 	if res.Code != 0 {
 		log.Errorf("node be called(%s) instance(%v) responce code(%v)", uri, i, res.Code)
-		if res.Code == -409 {
+		if err = errors.Int(res.Code); err == errors.Conflict {
 			json.Unmarshal([]byte(res.Data), data)
 		}
 	}
