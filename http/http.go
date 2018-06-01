@@ -40,6 +40,7 @@ func innerRouter(e *gin.Engine) {
 	group.POST("/cancel", cancel)
 	group.GET("/fetch/all", fetchAll)
 	group.GET("/fetch", fetch)
+	group.GET("/fetchs", fetchs)
 	group.GET("/poll", poll)
 	group.GET("/polls", polls)
 	group.GET("/nodes", nodes)
