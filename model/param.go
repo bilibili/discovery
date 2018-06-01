@@ -48,7 +48,7 @@ type ArgFetch struct {
 type ArgFetchs struct {
 	Zone   string   `form:"zone"`
 	Env    string   `form:"env" validate:"required"`
-	AppID  []string `form:"appid,split"`
+	AppID  []string `form:"appid"`
 	Status uint32   `form:"status" validate:"required"`
 }
 

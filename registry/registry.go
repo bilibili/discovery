@@ -234,7 +234,7 @@ func pollKey(env, appid string) string {
 }
 
 // Set Set the status of instance by hostnames.
-func (r *Registry) Set(action model.Action, region, zone, env, appid string, changes map[string]string, setTime int64) (ok bool) {
+func (r *Registry) Set(action model.Action, zone, env, appid string, changes map[string]string, setTime int64) (ok bool) {
 	a, _, _ := r.apps(appid, env, zone)
 	if len(a) == 0 {
 		return
@@ -247,14 +247,6 @@ func (r *Registry) Set(action model.Action, region, zone, env, appid string, cha
 			cs[k] = uint32(tmp)
 		}
 		if ok = a[0].SetStatus(cs, setTime); !ok {
-			return
-		}
-	case model.Weight:
-		cs := make(map[string]int)
-		for k, v := range changes {
-			cs[k], _ = strconv.Atoi(v)
-		}
-		if ok = a[0].SetWeight(cs, setTime); !ok {
 			return
 		}
 	case model.Color:

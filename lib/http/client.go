@@ -27,7 +27,8 @@ type ClientConfig struct {
 
 // Client is http client.
 type Client struct {
-	client *xhttp.Client
+	client    *xhttp.Client
+	transport xhttp.RoundTripper
 }
 
 // NewClient new a http client.
@@ -37,11 +38,12 @@ func NewClient(c *ClientConfig) *Client {
 		Timeout:   xtime.Duration(c.Dial),
 		KeepAlive: xtime.Duration(c.KeepAlive),
 	}
+	client.transport = &xhttp.Transport{
+		DialContext:     dialer.DialContext,
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	client.client = &xhttp.Client{
-		Transport: &xhttp.Transport{
-			DialContext:     dialer.DialContext,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
+		Transport: client.transport,
 	}
 	return client
 }
@@ -86,6 +88,12 @@ func (client *Client) Raw(c context.Context, req *xhttp.Request, v ...string) (b
 	}
 	bs, err = readAll(resp.Body, _minRead)
 	return
+}
+
+// SetTransport set client transport
+func (client *Client) SetTransport(t xhttp.RoundTripper) {
+	client.transport = t
+	client.client.Transport = t
 }
 
 // Do sends an HTTP request and returns an HTTP json response.
