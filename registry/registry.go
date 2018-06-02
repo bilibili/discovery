@@ -3,7 +3,6 @@ package registry
 import (
 	"fmt"
 	"math/rand"
-	"strconv"
 	"sync"
 	"time"
 
@@ -233,26 +232,14 @@ func pollKey(env, appid string) string {
 	return fmt.Sprintf("%s.%s", env, appid)
 }
 
-// Set Set the status of instance by hostnames.
-func (r *Registry) Set(action model.Action, zone, env, appid string, changes map[string]string, setTime int64) (ok bool) {
+// Set Set the metadata  of instance by hostnames.
+func (r *Registry) Set(zone, env, appid string, changes *model.ArgSet) (ok bool) {
 	a, _, _ := r.apps(appid, env, zone)
 	if len(a) == 0 {
 		return
 	}
-	switch action {
-	case model.Status:
-		cs := make(map[string]uint32)
-		for k, v := range changes {
-			tmp, _ := strconv.ParseUint(v, 10, 32)
-			cs[k] = uint32(tmp)
-		}
-		if ok = a[0].SetStatus(cs, setTime); !ok {
-			return
-		}
-	case model.Color:
-		if ok = a[0].SetColor(changes, setTime); !ok {
-			return
-		}
+	if ok = a[0].Set(changes); !ok {
+		return
 	}
 	r.broadcast(zone, env, appid, a[0])
 	return

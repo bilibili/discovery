@@ -20,6 +20,7 @@ func (d *Discovery) Register(c context.Context, ins *model.Instance, arg *model.
 func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Instance, err error) {
 	i, ok := d.registry.Renew(arg)
 	if !ok {
+		err = errors.NothingFound
 		log.Errorf("renew appid(%s) hostname(%s) zone(%s) env(%s) error", arg.AppID, arg.Hostname, arg.Zone, arg.Env)
 		return
 	}

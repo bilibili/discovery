@@ -76,8 +76,9 @@ type ArgSet struct {
 	Env          string   `form:"env" validate:"required"`
 	AppID        string   `form:"appid" validate:"required"`
 	Hostname     []string `form:"hostname"`
-	Status       []int64  `form:"status"`
+	Status       []uint32 `form:"status"`
 	Color        []string `form:"color"`
+	Metadata     []string `form:"metadata"`
 	Replication  bool     `form:"replication"`
 	SetTimestamp int64    `form:"set_timestamp"`
 }
