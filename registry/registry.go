@@ -233,15 +233,15 @@ func pollKey(env, appid string) string {
 }
 
 // Set Set the metadata  of instance by hostnames.
-func (r *Registry) Set(zone, env, appid string, changes *model.ArgSet) (ok bool) {
-	a, _, _ := r.apps(appid, env, zone)
+func (r *Registry) Set(arg *model.ArgSet) (ok bool) {
+	a, _, _ := r.apps(arg.AppID, arg.Env, arg.Zone)
 	if len(a) == 0 {
 		return
 	}
-	if ok = a[0].Set(changes); !ok {
+	if ok = a[0].Set(arg); !ok {
 		return
 	}
-	r.broadcast(zone, env, appid, a[0])
+	r.broadcast(arg.Zone, arg.Env, arg.AppID, a[0])
 	return
 }
 

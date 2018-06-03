@@ -324,7 +324,6 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 				return
 			}
 			dst.Status = changes.Status[i]
-
 			if dst.Status == InstanceStatusUP {
 				dst.UpTimestamp = setTime
 			}
@@ -333,12 +332,10 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 			dst.Color = changes.Color[i]
 		}
 		if len(changes.Metadata) != 0 {
-			if json.Valid([]byte(changes.Metadata[i])) {
-				if err := json.Unmarshal([]byte(changes.Metadata[i]), &dst.Metadata); err != nil {
-					log.Errorf("set change metadata err %s", changes.Metadata[i])
-					ok = false
-					return
-				}
+			if err := json.Unmarshal([]byte(changes.Metadata[i]), &dst.Metadata); err != nil {
+				log.Errorf("set change metadata err %s", changes.Metadata[i])
+				ok = false
+				return
 			}
 		}
 		dst.LatestTimestamp = setTime

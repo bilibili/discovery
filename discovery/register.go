@@ -94,3 +94,11 @@ func (d *Discovery) Nodes(c context.Context) (nsi []*model.Node) {
 func (d *Discovery) PutChan(ch chan map[string]*model.InstanceInfo) {
 	d.registry.PutChan(ch)
 }
+
+// Set set metadata,color,status of instance.
+func (d *Discovery) Set(c context.Context, arg *model.ArgSet) (err error) {
+	if !d.registry.Set(arg) {
+		err = errors.ParamsErr
+	}
+	return
+}
