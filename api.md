@@ -41,7 +41,7 @@ POST http://HOST/discovery/register
 | addrs    | true  | []string          | 服务地址列表                     |
 | status   | true  | int               | 状态，1表示接收流量，2表示不接收 |
 | color    | false | string            | 灰度或集群标识                   |
-| metadata | false | map[string]string | 业务自定义信息                   |
+| metadata | false | json string | 业务自定义信息      必须为map[string]string 的json格式            |
 
 *返回结果*
 
@@ -423,3 +423,35 @@ GET http://HOST/discovery/nodes
 }
 ```
 
+### 修改实例信息set
+
+*HTTP*
+
+POST http://HOST/discovery/set
+
+*请求参数*
+
+| 参数名   | 必选  | 类型              | 说明                             |
+| -------- | ----- | ----------------- | -------------------------------- |
+| zone     | true  | string            | 可用区                           |
+| env      | true  | string            | 环境                             |
+| appid    | true  | string            | 服务名标识                       |
+| hostname | true  | []string            | 主机名                           |
+| status   | true  | []int               | 状态，1表示接收流量，2表示不接收 |
+| color    | false | []string            | 灰度或集群标识                   |
+| metadata | false | []string | 业务自定义信息         string 必须为map[strinng]string 的json格式   |      
+
+*返回结果*
+
+```json
+*****成功*****
+{
+    "code":0,
+    "message":""
+}
+****失败****
+{
+    "code":-400,
+    "message":"-400"
+}
+```
