@@ -29,17 +29,19 @@ go build
 
 ### 客户端 
 
-* [API文档](api.md)
+* [API文档](doc/api.md)
 * [GoSDK](naming/client.go)
 * [JavaSDK](https://github.com/flygit/discoveryJavaSDK)
 
 ## 背景及设计
 
-[点我了解背后的故事](intro.md)
+* [了解背后的故事](doc/intro.md)
+* [架构设计及原理](doc/arch.md)
+* [B站最佳实践](doc/practice.md)
 
 ## 反馈及讨论
 
 建议优先使用issues，也可加微信Discovery群(群码失效也可加私人微信)
 
-<img width="200" height="200" src="discovery_wechat.png" />
-<img width="200" height="200" src="felixhao_wechat.png" />
+<img width="200" height="200" src="doc/discovery_wechat.png" />
+<img width="200" height="200" src="doc/felixhao_wechat.png" />

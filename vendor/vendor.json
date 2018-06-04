@@ -51,6 +51,12 @@
 			"revisionTime": "2018-05-22T22:42:51Z"
 		},
 		{
+			"checksumSHA1": "yIkYzW7bzAD81zHyuCNmEj4+oxQ=",
+			"path": "github.com/gopherjs/gopherjs/js",
+			"revision": "8dffc02ea1cb8398bb73f30424697c60fcf8d4c5",
+			"revisionTime": "2018-04-24T20:25:46Z"
+		},
+		{
 			"checksumSHA1": "gydhX7ik17tDsfT5t97UDRseQ7g=",
 			"path": "github.com/json-iterator/go",
 			"revision": "8744d7c5c7b40a53e018f78d8c508b3315260b96",
@@ -99,10 +105,10 @@
 			"revisionTime": "2018-02-22T19:45:00Z"
 		},
 		{
-			"checksumSHA1": "9LakndErFi5uCXtY1KWl0iRnT4c=",
+			"checksumSHA1": "6Mgn4H/4vpqYGlaIKZ0UwOmJN0E=",
 			"path": "github.com/smartystreets/goconvey/convey/gotest",
-			"revision": "9e8dc3f972df6c8fcc0375ef492c24d0bb204857",
-			"revisionTime": "2017-06-02T16:46:21Z"
+			"revision": "ef6db91d284a0e7badaa1f0c404c30aa7dee3aed",
+			"revisionTime": "2018-02-22T19:45:00Z"
 		},
 		{
 			"checksumSHA1": "FWDhk37bhAwZ2363D/L2xePwR64=",
