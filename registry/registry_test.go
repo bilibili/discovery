@@ -265,22 +265,67 @@ func BenchmarkBroadcast(b *testing.B) {
 	}
 }
 
-func TestSetStatus(t *testing.T) {
+func TestSet(t *testing.T) {
 	i := model.NewInstance(reg)
 	r := register(t, i)
-	changes := make(map[string]string)
-	changes["reg"] = "1"
+	changes := &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
+	changes.Hostname = []string{"reg"}
+	changes.Status = []uint32{1}
 	Convey("test setstatus to 1", t, func() {
-		ok := r.Set(model.Status, arg.Zone, arg.Env, arg.AppID, changes, 0)
+		ok := r.Set(changes)
 		So(ok, ShouldBeTrue)
 		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
 		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
 		So(err, ShouldBeNil)
 		So(c.Instances["sh0001"][0].Status, ShouldResemble, uint32(1))
 	})
+	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
+	changes.Hostname = []string{"reg"}
+	changes.Color = []string{"blue"}
+	Convey("test set color to blue", t, func() {
+		ok := r.Set(changes)
+		So(ok, ShouldBeTrue)
+		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
+		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
+		So(err, ShouldBeNil)
+		So(c.Instances["sh0001"][0].Color, ShouldResemble, "blue")
+	})
+	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
+	changes.Hostname = []string{"reg"}
+	changes.Metadata = []string{`{"weight":"11"}`}
+	Convey("test set metadata weight to 11", t, func() {
+		ok := r.Set(changes)
+		So(ok, ShouldBeTrue)
+		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
+		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
+		So(err, ShouldBeNil)
+		So(c.Instances["sh0001"][0].Metadata["weight"], ShouldResemble, "11")
+	})
+	i1 := model.NewInstance(regH1)
+	r.Register(i1, 0)
+	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
+	changes.Hostname = []string{"reg", "regH1"}
+	changes.Metadata = []string{`{"weight":"12"}`, `{"weight":"13"}`}
+	changes.Color = []string{"yellow", "yellow"}
+	Convey("test set multi instance's color to blue and metadata weight to 12", t, func() {
+		ok := r.Set(changes)
+		So(ok, ShouldBeTrue)
+		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
+		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
+		So(err, ShouldBeNil)
+		for _, ins := range c.Instances["sh0001"] {
+			if ins.Hostname == "reg" {
+				So(ins.Metadata["weight"], ShouldResemble, "12")
+				So(ins.Color, ShouldResemble, "yellow")
+			} else if ins.Hostname == "regH1" {
+				So(ins.Metadata["weight"], ShouldResemble, "13")
+				So(ins.Color, ShouldResemble, "yellow")
+			}
+		}
+	})
 }
 
-func BenchmarkSetStatus(b *testing.B) {
+func BenchmarkSet(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			var (
@@ -289,9 +334,10 @@ func BenchmarkSetStatus(b *testing.B) {
 				ok  bool
 			)
 			r, _ := benchRegister(b)
-			changes := make(map[string]string)
-			changes["csq"] = "1"
-			if ok = r.Set(model.Status, arg.Zone, arg.Env, arg.AppID, changes, 0); !ok {
+			changes := &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
+			changes.Hostname = []string{"reg"}
+			changes.Status = []uint32{1}
+			if ok = r.Set(changes); !ok {
 				b.Errorf("SetStatus(%v) error", arg.AppID)
 			}
 			fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
@@ -301,46 +347,6 @@ func BenchmarkSetStatus(b *testing.B) {
 			}
 			if c.Instances["sh0001"][0].Status != 1 {
 				b.Errorf("SetStatus(%v) change error", fetchArg.AppID)
-			}
-		}
-	})
-}
-
-func TestSetColor(t *testing.T) {
-	i := model.NewInstance(reg)
-	r := register(t, i)
-	changes := make(map[string]string)
-	changes["reg"] = "blue"
-	Convey("test set color to blue", t, func() {
-		ok := r.Set(model.Color, arg.Zone, arg.Env, arg.AppID, changes, 0)
-		So(ok, ShouldBeTrue)
-		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
-		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
-		So(err, ShouldBeNil)
-		So(c.Instances["sh0001"][0].Color, ShouldResemble, "blue")
-	})
-}
-
-func BenchmarkSetColor(b *testing.B) {
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			var (
-				c   *model.InstanceInfo
-				err error
-				ok  bool
-			)
-			r, _ := benchRegister(b)
-			changes := make(map[string]string)
-			changes["csq"] = "blue"
-			if ok = r.Set(model.Color, arg.Zone, arg.Env, arg.AppID, changes, 0); !ok {
-				b.Errorf("SetColor(%v) error(%v)", arg.AppID, err)
-			}
-			fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
-			if c, err = r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status); err != nil {
-				b.Errorf("Fetch(%v) error(%v)", fetchArg.AppID, err)
-			}
-			if c.Instances["sh0001"][0].Color != "blue" {
-				b.Errorf("SetColor(%v) change error", fetchArg.AppID)
 			}
 		}
 	})

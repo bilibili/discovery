@@ -301,87 +301,43 @@ func (a *App) Len() (l int) {
 	return
 }
 
-// SetStatus with a new status for instance.
-func (a *App) SetStatus(changes map[string]uint32, setTime int64) (ok bool) {
+// Set set new status,metadata,color  of instance .
+func (a *App) Set(changes *ArgSet) (ok bool) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	var dst *Instance
-	for hostname, s := range changes {
-		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
-			return
-		}
-		if s != InstanceStatusUP && s != InstancestatusWating {
-			log.Errorf("SetWeight change status(%d) is error", s)
-			ok = false
-			return
-		}
-	}
-	if setTime == 0 {
+	var (
+		dst     *Instance
+		setTime int64
+	)
+	if changes.SetTimestamp == 0 {
 		setTime = time.Now().UnixNano()
 	}
-	for hostname, s := range changes {
-		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
-			return // NOTE: impossible~~~
-		}
-		dst.Status = s
-		dst.LatestTimestamp = setTime
-		dst.DirtyTimestamp = setTime
-		if dst.Status == InstanceStatusUP {
-			dst.UpTimestamp = setTime
-		}
-	}
-	a.updateLatest(setTime)
-	return
-}
-
-// SetWeight with a new weight for instance.
-func (a *App) SetWeight(changes map[string]int, setTime int64) (ok bool) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	var dst *Instance
-	for hostname := range changes {
+	for i, hostname := range changes.Hostname {
 		if dst, ok = a.instances[hostname]; !ok {
 			log.Errorf("SetWeight hostname(%s) not found", hostname)
 			return
 		}
-	}
-	if setTime == 0 {
-		setTime = time.Now().UnixNano()
-	}
-	for hostname := range changes {
-		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
-			return // NOTE: impossible~~~
+		if len(changes.Status) != 0 {
+			if changes.Status[i] != InstanceStatusUP && changes.Status[i] != InstancestatusWating {
+				log.Errorf("SetWeight change status(%d) is error", changes.Status[i])
+				ok = false
+				return
+			}
+			dst.Status = changes.Status[i]
+			if dst.Status == InstanceStatusUP {
+				dst.UpTimestamp = setTime
+			}
 		}
-		dst.LatestTimestamp = setTime
-		dst.DirtyTimestamp = setTime
-	}
-	a.updateLatest(setTime)
-	return
-}
-
-// SetColor with a new color for instance.
-func (a *App) SetColor(changes map[string]string, setTime int64) (ok bool) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	var dst *Instance
-	for hostname := range changes {
-		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
-			return
+		if len(changes.Color) != 0 {
+			dst.Color = changes.Color[i]
 		}
-	}
-	if setTime == 0 {
-		setTime = time.Now().UnixNano()
-	}
-	for hostname, color := range changes {
-		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
-			return // NOTE: impossible~~~
+		if len(changes.Metadata) != 0 {
+			if err := json.Unmarshal([]byte(changes.Metadata[i]), &dst.Metadata); err != nil {
+				log.Errorf("set change metadata err %s", changes.Metadata[i])
+				ok = false
+				return
+			}
 		}
-		dst.Color = color
 		dst.LatestTimestamp = setTime
 		dst.DirtyTimestamp = setTime
 	}

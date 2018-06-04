@@ -20,6 +20,7 @@ func (d *Discovery) Register(c context.Context, ins *model.Instance, arg *model.
 func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Instance, err error) {
 	i, ok := d.registry.Renew(arg)
 	if !ok {
+		err = errors.NothingFound
 		log.Errorf("renew appid(%s) hostname(%s) zone(%s) env(%s) error", arg.AppID, arg.Hostname, arg.Zone, arg.Env)
 		return
 	}
@@ -92,4 +93,12 @@ func (d *Discovery) Nodes(c context.Context) (nsi []*model.Node) {
 // PutChan put chan into pool.
 func (d *Discovery) PutChan(ch chan map[string]*model.InstanceInfo) {
 	d.registry.PutChan(ch)
+}
+
+// Set set metadata,color,status of instance.
+func (d *Discovery) Set(c context.Context, arg *model.ArgSet) (err error) {
+	if !d.registry.Set(arg) {
+		err = errors.ParamsErr
+	}
+	return
 }

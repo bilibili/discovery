@@ -44,6 +44,7 @@ func innerRouter(e *gin.Engine) {
 	group.GET("/poll", poll)
 	group.GET("/polls", polls)
 	group.GET("/nodes", nodes)
+	group.POST("/set", set)
 }
 
 func loggerHandler(c *gin.Context) {

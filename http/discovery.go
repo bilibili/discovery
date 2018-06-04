@@ -143,6 +143,20 @@ func polls(c *gin.Context) {
 	}
 }
 
+func set(c *gin.Context) {
+	arg := new(model.ArgSet)
+	if err := c.Bind(arg); err != nil {
+		return
+	}
+	// len of color,status,metadata must equal to len of hostname or be zero
+	if (len(arg.Hostname) != len(arg.Color) && len(arg.Color) != 0) ||
+		(len(arg.Hostname) != len(arg.Status) && len(arg.Status) != 0) ||
+		(len(arg.Hostname) != len(arg.Metadata) && len(arg.Metadata) != 0) {
+		result(c, nil, errors.ParamsErr)
+		return
+	}
+	result(c, nil, dis.Set(c, arg))
+}
 func nodes(c *gin.Context) {
 	result(c, dis.Nodes(c), nil)
 }
