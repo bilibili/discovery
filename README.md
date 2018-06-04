@@ -25,7 +25,7 @@ go build
 
 ### 配置文件解读
 
-请详细查看`discovery-example.toml`内注释说明
+请详细查看`cmd/discovery/discovery-example.toml`内注释说明
 
 ### 客户端 
 
@@ -39,6 +39,7 @@ go build
 
 ## 反馈及讨论
 
-请加微信
+建议优先使用issues，也可加微信Discovery群(群码失效也可加私人微信)
 
 <img width="200" height="200" src="discovery_wechat.png" />
+<img width="200" height="200" src="felixhao_wechat.png" />
