@@ -14,22 +14,22 @@ import (
 	log "github.com/golang/glog"
 )
 
+const (
+	contextErrCode = "context/err/code"
+)
+
 var (
 	dis *discovery.Discovery
 )
 
 // Init init http
 func Init(c *conf.Config) {
-	initService(c)
-	engine := gin.New()
+	dis = discovery.New(c)
 	gin.SetMode(gin.ReleaseMode)
+	engine := gin.New()
 	engine.Use(loggerHandler, recoverHandler)
 	innerRouter(engine)
 	engine.Run(c.HTTPServer.Addr)
-}
-
-func initService(c *conf.Config) {
-	dis = discovery.New(c)
 }
 
 // innerRouter init local router api path.
@@ -61,12 +61,12 @@ func loggerHandler(c *gin.Context) {
 	end := time.Now()
 	latency := end.Sub(start)
 	statusCode := c.Writer.Status()
-	comment := c.Errors.ByType(gin.ErrorTypePrivate).String()
+	ecode := c.GetInt(contextErrCode)
 	clientIP := c.ClientIP()
 	if raw != "" {
 		path = path + "?" + raw
 	}
-	log.Infof("METHOD:%s | PATH:%s | CODE:%d | IP:%s | TIME:%2f | ERROR:%s", method, path, statusCode, clientIP, latency, comment)
+	log.Infof("METHOD:%s | PATH:%s | CODE:%d | IP:%s | TIME:%d | ECODE:%d", method, path, statusCode, clientIP, latency/time.Millisecond, ecode)
 }
 
 func recoverHandler(c *gin.Context) {
@@ -91,8 +91,10 @@ type resp struct {
 }
 
 func result(c *gin.Context, data interface{}, err error) {
+	ee := errors.Code(err)
+	c.Set(contextErrCode, ee.Code())
 	c.JSON(200, resp{
-		Code: errors.Code(err).Code(),
+		Code: ee.Code(),
 		Data: data,
 	})
 }

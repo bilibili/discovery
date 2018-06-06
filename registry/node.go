@@ -27,30 +27,35 @@ const (
 // This struct handles replicating all update operations like 'Register,Renew,Cancel,Expiration and Status Changes'
 // to the <Discovery Server> node it represents.
 type Node struct {
-	c            *conf.Config
+	c *conf.Config
+
+	// url
 	client       *http.Client
 	pRegisterURL string
 	registerURL  string
 	cancelURL    string
 	renewURL     string
 	setURL       string
-	addr         string
-	status       model.NodeStatus
-	zone         string
-	otherZone    bool
+
+	addr      string
+	status    model.NodeStatus
+	zone      string
+	otherZone bool
 }
 
 // newNode return a node.
 func newNode(c *conf.Config, addr string) (n *Node) {
 	n = &Node{
-		c:           c,
-		addr:        addr,
+		c: c,
+		// url
+		client:      http.NewClient(c.HTTPClient),
 		registerURL: fmt.Sprintf("http://%s%s", addr, _registerURL),
 		cancelURL:   fmt.Sprintf("http://%s%s", addr, _cancelURL),
 		renewURL:    fmt.Sprintf("http://%s%s", addr, _renewURL),
 		setURL:      fmt.Sprintf("http://%s%s", addr, _setURL),
-		client:      http.NewClient(c.HTTPClient),
-		status:      model.NodeStatusLost,
+
+		addr:   addr,
+		status: model.NodeStatusLost,
 	}
 	return
 }

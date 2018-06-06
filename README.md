@@ -20,8 +20,10 @@ go build
 
 ### 运行
 ```shell
-./discovry -conf discovery-example.toml
+./discovery -conf discovery-example.toml -alsologtostderr
 ```
+
+`-alsologtostderr`是glog库的flag，表示输出到stderr，输出到目录是`-log_dir="/tmp"`，详细文档[点击查看](https://godoc.org/github.com/golang/glog)
 
 ### 配置文件解读
 

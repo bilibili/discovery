@@ -7,7 +7,7 @@ type ArgRegister struct {
 	AppID           string   `form:"appid" validate:"required"`
 	Hostname        string   `form:"hostname" validate:"required"`
 	Status          uint32   `form:"status" validate:"required"`
-	Addrs           []string `form:"addrs"`
+	Addrs           []string `form:"addrs" validate:"gt=0"`
 	Color           string   `form:"color"`
 	Version         string   `form:"version"`
 	Metadata        string   `form:"metadata"`
@@ -38,9 +38,9 @@ type ArgCancel struct {
 
 // ArgFetch define fetch param.
 type ArgFetch struct {
-	Zone   string `form:"zone" validate:"required"`
+	Zone   string `form:"zone"`
 	Env    string `form:"env" validate:"required"`
-	AppID  string `form:"appid"`
+	AppID  string `form:"appid" validate:"required"`
 	Status uint32 `form:"status" validate:"required"`
 }
 
@@ -48,24 +48,24 @@ type ArgFetch struct {
 type ArgFetchs struct {
 	Zone   string   `form:"zone"`
 	Env    string   `form:"env" validate:"required"`
-	AppID  []string `form:"appid"`
+	AppID  []string `form:"appid" validate:"gt=0"`
 	Status uint32   `form:"status" validate:"required"`
 }
 
 // ArgPoll define poll param.
 type ArgPoll struct {
-	Zone            string `form:"zone" validate:"required"`
+	Zone            string `form:"zone"`
 	Env             string `form:"env" validate:"required"`
-	AppID           string `form:"appid"`
+	AppID           string `form:"appid" validate:"required"`
 	Hostname        string `form:"hostname" validate:"required"`
 	LatestTimestamp int64  `form:"latest_timestamp"`
 }
 
 // ArgPolls define poll param.
 type ArgPolls struct {
-	Zone            string   `form:"zone" validate:"required"`
+	Zone            string   `form:"zone"`
 	Env             string   `form:"env" validate:"required"`
-	AppID           []string `form:"appid"`
+	AppID           []string `form:"appid" validate:"gt=0"`
 	Hostname        string   `form:"hostname" validate:"required"`
 	LatestTimestamp []int64  `form:"latest_timestamp"`
 }
@@ -75,10 +75,10 @@ type ArgSet struct {
 	Zone         string   `form:"zone" validate:"required"`
 	Env          string   `form:"env" validate:"required"`
 	AppID        string   `form:"appid" validate:"required"`
-	Hostname     []string `form:"hostname"`
-	Status       []uint32 `form:"status"`
-	Color        []string `form:"color"`
-	Metadata     []string `form:"metadata"`
+	Hostname     []string `form:"hostname" validate:"gte=0"`
+	Status       []uint32 `form:"status" validate:"gte=0"`
+	Color        []string `form:"color" validate:"gte=0"`
+	Metadata     []string `form:"metadata" validate:"gte=0"`
 	Replication  bool     `form:"replication"`
 	SetTimestamp int64    `form:"set_timestamp"`
 }

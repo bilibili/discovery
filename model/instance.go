@@ -75,6 +75,7 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 		Env:            arg.Env,
 		AppID:          arg.AppID,
 		Hostname:       arg.Hostname,
+		Addrs:          arg.Addrs,
 		Color:          arg.Color,
 		Version:        arg.Version,
 		Status:         arg.Status,

@@ -21,13 +21,14 @@ func NewNodes(c *conf.Config) (nodes *Nodes) {
 	ns := make([]*Node, 0, len(c.Nodes))
 	for _, addr := range c.Nodes {
 		n := newNode(c, addr)
+		n.zone = c.Zone
 		n.pRegisterURL = fmt.Sprintf("http://%s%s", c.HTTPServer.Addr, _registerURL)
 		ns = append(ns, n)
 	}
 	for addr, name := range c.Zones {
 		n := newNode(c, addr)
-		n.otherZone = true
 		n.zone = name
+		n.otherZone = true
 		n.pRegisterURL = fmt.Sprintf("http://%s%s", c.HTTPServer.Addr, _registerURL)
 		ns = append(ns, n)
 	}

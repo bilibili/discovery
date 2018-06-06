@@ -18,6 +18,7 @@ const (
 func register(c *gin.Context) {
 	arg := new(model.ArgRegister)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	i := model.NewInstance(arg)
@@ -45,6 +46,7 @@ func register(c *gin.Context) {
 func renew(c *gin.Context) {
 	arg := new(model.ArgRenew)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	// renew
@@ -79,6 +81,7 @@ func fetch(c *gin.Context) {
 func fetchs(c *gin.Context) {
 	arg := new(model.ArgFetchs)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	ins, err := dis.Fetchs(c, arg)
@@ -88,6 +91,7 @@ func fetchs(c *gin.Context) {
 func poll(c *gin.Context) {
 	arg := new(model.ArgPolls)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	ch, _, err := dis.Polls(c, arg)
@@ -113,6 +117,7 @@ func poll(c *gin.Context) {
 func polls(c *gin.Context) {
 	arg := new(model.ArgPolls)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	if len(arg.AppID) != len(arg.LatestTimestamp) {
@@ -146,6 +151,7 @@ func polls(c *gin.Context) {
 func set(c *gin.Context) {
 	arg := new(model.ArgSet)
 	if err := c.Bind(arg); err != nil {
+		result(c, nil, errors.ParamsErr)
 		return
 	}
 	// len of color,status,metadata must equal to len of hostname or be zero
@@ -157,6 +163,7 @@ func set(c *gin.Context) {
 	}
 	result(c, nil, dis.Set(c, arg))
 }
+
 func nodes(c *gin.Context) {
 	result(c, dis.Nodes(c), nil)
 }

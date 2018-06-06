@@ -58,6 +58,11 @@ POST http://HOST/discovery/register
 }
 ```
 
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/register' -d "zone=sh1&env=test&appid=provider&hostname=myhostname&status=1&addrs=http%3A%2F%2F172.1.1.1%3A8000&addrs=grpc%3A%2F%2F172.1.1.1%3A9999&version=111&metadata=%7B%22weight%22%3A10%7D"
+```
+
 ### 心跳renew
 
 *HTTP*
@@ -88,6 +93,11 @@ POST http://HOST/discovery/renew
 }
 ```
 
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/renew' -d "zone=sh1&env=test&appid=provider&hostname=myhostname"
+```
+
 ### 下线cancel
 
 *HTTP*
@@ -116,6 +126,11 @@ POST http://HOST/discovery/cancel
     "code":-400,
     "message":"-400"
 }
+```
+
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/cancel' -d "zone=sh1&env=test&appid=provider&hostname=myhostname"
 ```
 
 ### 获取实例fetch
@@ -168,6 +183,11 @@ GET http://HOST/discovery/fetch
         "latest_timestamp": 1525948301833084700
     }
 }
+```
+
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/fetch?zone=sh1&env=test&appid=provider&status=1'
 ```
 
 ### 批量获取实例fetchs
@@ -253,6 +273,11 @@ GET http://HOST/discovery/fetchs
 }
 ```
 
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/fetchs?zone=sh1&env=test&appid=provider&appid=provider2&status=1'
+```
+
 ### 长轮询获取实例poll
 
 *HTTP*
@@ -303,6 +328,11 @@ GET http://HOST/discovery/poll
         "latest_timestamp": 1525948301833084700
     }
 }
+```
+
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/poll?zone=sh1&env=test&appid=provider&latest_timestamp=0'
 ```
 
 ### 长轮询批量获取实例polls
@@ -388,6 +418,11 @@ GET http://HOST/discovery/polls
 }
 ```
 
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/polls?zone=sh1&env=test&appid=provider&appid=provider2&latest_timestamp=0'
+```
+
 ### 获取node节点
 
 *HTTP*
@@ -423,6 +458,11 @@ GET http://HOST/discovery/nodes
 }
 ```
 
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/nodes'
+```
+
 ### 修改实例信息set
 
 *HTTP*
@@ -437,7 +477,7 @@ POST http://HOST/discovery/set
 | env      | true  | string            | 环境                             |
 | appid    | true  | string            | 服务名标识                       |
 | hostname | true  | []string            | 主机名                           |
-| status   | true  | []int               | 状态，1表示接收流量，2表示不接收 |
+| status   | false | []int               | 状态，1表示接收流量，2表示不接收 |
 | color    | false | []string            | 灰度或集群标识                   |
 | metadata | false | []string | 业务自定义信息         string 必须为map[strinng]string 的json格式   |      
 
@@ -454,4 +494,9 @@ POST http://HOST/discovery/set
     "code":-400,
     "message":"-400"
 }
+```
+
+*CURL*
+```shell
+curl 'http://127.0.0.1:7171/discovery/set' -d "zone=sh1&env=test&appid=provider&hostname=myhostname&status=1&color=red&hostname=myhostname2&status=1&color=red"
 ```

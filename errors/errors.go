@@ -38,6 +38,7 @@ func (e ecode) Equal(err error) bool {
 // Code converts error to ecode.
 func Code(e error) (ie Error) {
 	if e == nil {
+		ie = OK
 		return
 	}
 	i, err := strconv.Atoi(e.Error())

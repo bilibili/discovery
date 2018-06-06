@@ -17,7 +17,7 @@ script:
     --skip=vendor \
     --skip=.git \
     --tests ./...
-  - cd cmd/discovery
-  - go build
   - go test ./registry/...
   - go test ./discovery/...
+  - cd cmd/discovery
+  - go build
