@@ -1,17 +1,17 @@
+- [字段定义](#字段定义)
+- [错误码定义](#错误码定义)
+- [注册register](#注册register)
+- [心跳renew](#心跳renew)
+- [下线cancel](#下线cancel)
+- [获取实例fetch](#获取实例fetch)
+- [批量获取实例fetchs](#批量获取实例fetchs)
+- [长轮询获取实例poll](#长轮询获取实例poll)
+- [长轮询批量获取实例polls](#长轮询批量获取实例polls)
+- [获取node节点](#获取node节点)
+- [修改实例信息set](#修改实例信息set)
 
-- [字段定义field](#field)
-- [错误码定义ecode](#ecode)
-- [注册register](#register)
-- [心跳renew](#renew)
-- [下线cancel](#cancel)
-- [获取实例fetch](#fetch)
-- [批量获取实例fetchs](#fetchs)
-- [长轮询获取实例poll](#poll)
-- [长轮询批量获取实例polls](#polls)
-- [获取node节点](#node)
-- [修改实例信息set](#set)
 
-### 字段定义field
+### 字段定义
 
 | 字段     | 说明                                                                                                                             |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
