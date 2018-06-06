@@ -31,6 +31,7 @@ go build
 
 * [API文档](doc/api.md)
 * [GoSDK](naming/client.go)
+* [接入示例](naming/example_test.go)
 * [JavaSDK](https://github.com/flygit/discoveryJavaSDK)
 
 ## 背景及设计

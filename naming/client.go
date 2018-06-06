@@ -179,7 +179,7 @@ func (d *Discovery) Scheme() string {
 }
 
 // Register Register an instance with discovery and renew automatically
-func (d *Discovery) Register(ins *Instance) (cancel context.CancelFunc, err error) {
+func (d *Discovery) Register(ins *Instance) (cancelFunc context.CancelFunc, err error) {
 	d.mutex.Lock()
 	if _, ok := d.registry[ins.AppID]; ok {
 		err = ErrDuplication
@@ -191,15 +191,19 @@ func (d *Discovery) Register(ins *Instance) (cancel context.CancelFunc, err erro
 		return
 	}
 
-	var ctx context.Context
-	ctx, cancel = context.WithCancel(d.ctx)
+	ctx, cancel := context.WithCancel(d.ctx)
 	if err = d.register(ctx, ins); err != nil {
 		d.mutex.Lock()
 		delete(d.registry, ins.AppID)
 		d.mutex.Unlock()
+		cancel()
 		return
 	}
-
+	ch := make(chan struct{}, 1)
+	cancelFunc = context.CancelFunc(func() {
+		cancel()
+		<-ch
+	})
 	go func() {
 		ticker := time.NewTicker(_registerGap)
 		defer ticker.Stop()
@@ -211,6 +215,7 @@ func (d *Discovery) Register(ins *Instance) (cancel context.CancelFunc, err erro
 				}
 			case <-ctx.Done():
 				d.cancel(ins)
+				ch <- struct{}{}
 				return
 			}
 		}
@@ -438,8 +443,12 @@ func (d *Discovery) polls(ctx context.Context, host string) (apps map[string]app
 	params := url.Values{}
 	params.Set("env", c.Env)
 	params.Set("hostname", c.Host)
-	params.Set("appid", strings.Join(appIDs, ","))
-	params.Set("latest_timestamp", joinInts(lastTss))
+	for _, appid := range appIDs {
+		params.Add("appid", appid)
+	}
+	for _, ts := range lastTss {
+		params.Add("latest_timestamp", strconv.FormatInt(ts, 10))
+	}
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
 		log.Errorf("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)
 		return
@@ -532,24 +541,3 @@ var (
 		},
 	}
 )
-
-func joinInts(is []int64) string {
-	if len(is) == 0 {
-		return ""
-	}
-	if len(is) == 1 {
-		return strconv.FormatInt(is[0], 10)
-	}
-	buf := bfPool.Get().(*bytes.Buffer)
-	for _, i := range is {
-		buf.WriteString(strconv.FormatInt(i, 10))
-		buf.WriteByte(',')
-	}
-	if buf.Len() > 0 {
-		buf.Truncate(buf.Len() - 1)
-	}
-	s := buf.String()
-	buf.Reset()
-	bfPool.Put(buf)
-	return s
-}
