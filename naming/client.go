@@ -1,7 +1,6 @@
 package naming
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -88,7 +87,9 @@ func fixConfig(c *Config) {
 	if c.Env == "" {
 		c.Env = os.Getenv("DEPLOY_ENV")
 	}
-	c.Host, _ = os.Hostname()
+	if c.Host == "" {
+		c.Host, _ = os.Hostname()
+	}
 }
 
 // New new a discovery client.
@@ -533,11 +534,3 @@ func shuffle(n int, swap func(i, j int)) {
 		swap(i, j)
 	}
 }
-
-var (
-	bfPool = sync.Pool{
-		New: func() interface{} {
-			return bytes.NewBuffer([]byte{})
-		},
-	}
-)
