@@ -44,7 +44,4 @@ go build
 
 ## 反馈及讨论
 
-建议优先使用issues，也可加微信Discovery群(群码失效也可加私人微信)
-
-<img width="200" height="200" src="doc/discovery_wechat.png" />
-<img width="200" height="200" src="doc/felixhao_wechat.png" />
+建议优先使用issues，也可加QQ群：716486124
