@@ -149,7 +149,7 @@ func TestZones(t *testing.T) {
 			reg3.Hostname = "test03"
 			i3 := model.NewInstance(reg3)
 			svr.Register(context.TODO(), i3, reg3)
-			ch, new, err = svr.Polls(context.TODO(), pollArg)
+			ch, _, err = svr.Polls(context.TODO(), pollArg)
 			So(err, ShouldBeNil)
 			ins = <-ch
 			So(len(ins["main.arch.test"].Instances), ShouldResemble, 2)

@@ -14,7 +14,7 @@ type ecode int
 
 // ecode error.
 var (
-	OK           ecode = 0
+	OK           ecode
 	NotModified  ecode = -304
 	ParamsErr    ecode = -400
 	NothingFound ecode = -404

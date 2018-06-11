@@ -14,7 +14,7 @@ type Instance struct {
 	AppID string `json:"appid"`
 	// Hostname is hostname from docker.
 	Hostname string `json:"hostname"`
-	// Addrs is the adress of app instance
+	// Addrs is the address of app instance
 	// format: scheme://host
 	Addrs []string `json:"addrs"`
 	// Color distinguishs grey or common.
