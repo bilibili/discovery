@@ -46,15 +46,15 @@ var (
 
 // Config discovery configures.
 type Config struct {
-	Domain string
-	Zone   string
-	Env    string
-	Host   string
+	Nodes []string
+	Zone  string
+	Env   string
+	Host  string
 }
 
 type appData struct {
-	ZoneInstances map[string][]*Instance `json:"zone_instances"`
-	LastTs        int64                  `json:"latest_timestamp"`
+	Instances map[string][]*Instance `json:"instances"`
+	LastTs    int64                  `json:"latest_timestamp"`
 }
 
 // Discovery is discovery client.
@@ -70,8 +70,9 @@ type Discovery struct {
 	registry    map[string]struct{}
 	lastHost    string
 	cancelPolls context.CancelFunc
-
-	delete chan *appInfo
+	idx         uint64
+	node        []string
+	delete      chan *appInfo
 }
 
 type appInfo struct {
@@ -81,6 +82,9 @@ type appInfo struct {
 }
 
 func fixConfig(c *Config) {
+	if len(c.Nodes) == 0 {
+		panic("conf nodes can not be nil")
+	}
 	if c.Zone == "" {
 		c.Zone = os.Getenv("ZONE")
 	}
@@ -90,6 +94,18 @@ func fixConfig(c *Config) {
 	if c.Host == "" {
 		c.Host, _ = os.Hostname()
 	}
+}
+
+func (d *Discovery) pickNode() string {
+	if len(d.node) == 0 {
+		return d.c.Nodes[r.Intn(len(d.c.Nodes))]
+	}
+	nodes := d.node
+	return nodes[d.idx%uint64(len(nodes))]
+}
+
+func (d *Discovery) switchNode() {
+	atomic.AddUint64(&d.idx, 1)
 }
 
 // New new a discovery client.
@@ -234,11 +250,12 @@ func (d *Discovery) cancel(ins *Instance) (err error) {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	})
-	uri := fmt.Sprintf(_cancelURL, c.Domain)
+	uri := fmt.Sprintf(_cancelURL, d.pickNode())
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
 	// request
 	if err = d.httpClient.Post(context.TODO(), uri, "", params, &res); err != nil {
+		d.switchNode()
 		log.Errorf("discovery cancel client.Get(%v) env(%s) appid(%s) hostname(%s) error(%v)",
 			uri, c.Env, ins.AppID, c.Host, err)
 		return
@@ -270,7 +287,7 @@ func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	})
-	uri := fmt.Sprintf(_registerURL, c.Domain)
+	uri := fmt.Sprintf(_registerURL, d.pickNode())
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
 	params.Set("addrs", strings.Join(ins.Addrs, ","))
@@ -279,6 +296,7 @@ func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 	params.Set("status", _statusUP)
 	params.Set("metadata", string(metadata))
 	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
+		d.switchNode()
 		log.Errorf("discovery: register client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) color(%s) error(%v)",
 			uri, c.Zone, c.Env, ins.AppID, ins.Addrs, ins.Color, err)
 		return
@@ -304,10 +322,11 @@ func (d *Discovery) renew(ctx context.Context, ins *Instance) (err error) {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
 	})
-	uri := fmt.Sprintf(_renewURL, c.Domain)
+	uri := fmt.Sprintf(_renewURL, d.pickNode())
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
 	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
+		d.switchNode()
 		log.Errorf("discovery: renew client.Get(%v)  env(%s) appid(%s) hostname(%s) error(%v)",
 			uri, c.Env, ins.AppID, c.Host, err)
 		return
@@ -328,8 +347,6 @@ func (d *Discovery) serverproc() {
 	var (
 		retry  int
 		update bool
-		nodes  []string
-		idx    uint64
 		ctx    context.Context
 		cancel context.CancelFunc
 	)
@@ -351,7 +368,7 @@ func (d *Discovery) serverproc() {
 			close(app.event)
 		default:
 		}
-		if len(nodes) == 0 || update {
+		if len(d.node) == 0 || update {
 			update = false
 			tnodes := d.nodes()
 			if len(tnodes) == 0 {
@@ -360,19 +377,18 @@ func (d *Discovery) serverproc() {
 				continue
 			}
 			retry = 0
-			nodes = tnodes
 			// FIXME: we should use rand.Shuffle() in golang 1.10
-			shuffle(len(nodes), func(i, j int) {
-				nodes[i], nodes[j] = nodes[j], nodes[i]
+			shuffle(len(tnodes), func(i, j int) {
+				tnodes[i], tnodes[j] = tnodes[j], tnodes[i]
 			})
 		}
-		apps, err := d.polls(ctx, nodes[int(idx%uint64(len(nodes)))])
+		apps, err := d.polls(ctx, d.pickNode())
 		if err != nil {
+			d.switchNode()
 			if ctx.Err() == context.Canceled {
 				ctx = nil
 				continue
 			}
-			idx++
 			time.Sleep(time.Second)
 			retry++
 			continue
@@ -383,18 +399,15 @@ func (d *Discovery) serverproc() {
 }
 
 func (d *Discovery) nodes() (nodes []string) {
-	d.mutex.RLock()
-	c := d.c
-	d.mutex.RUnlock()
-
 	res := new(struct {
 		Code int `json:"code"`
 		Data []struct {
 			Addr string `json:"addr"`
 		} `json:"data"`
 	})
-	uri := fmt.Sprintf(_nodesURL, c.Domain)
+	uri := fmt.Sprintf(_nodesURL, d.pickNode())
 	if err := d.httpClient.Get(d.ctx, uri, "", nil, res); err != nil {
+		d.switchNode()
 		log.Errorf("discovery: consumer client.Get(%v)error(%+v)", uri, err)
 		return
 	}
@@ -477,9 +490,9 @@ func (d *Discovery) polls(ctx context.Context, host string) (apps map[string]app
 func (d *Discovery) broadcast(apps map[string]appData) {
 	for appID, v := range apps {
 		var count int
-		for zone, ins := range v.ZoneInstances {
+		for zone, ins := range v.Instances {
 			if len(ins) == 0 {
-				delete(v.ZoneInstances, zone)
+				delete(v.Instances, zone)
 			}
 			count += len(ins)
 		}
@@ -491,7 +504,7 @@ func (d *Discovery) broadcast(apps map[string]appData) {
 		d.mutex.RUnlock()
 		if ok {
 			app.lastTs = v.LastTs
-			app.zoneIns.Store(v.ZoneInstances)
+			app.zoneIns.Store(v.Instances)
 			select {
 			case app.event <- struct{}{}:
 			default:

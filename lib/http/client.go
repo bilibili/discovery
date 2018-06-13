@@ -51,9 +51,19 @@ func NewClient(c *ClientConfig) *Client {
 // NewRequest new http request with method, uri, ip, values and headers.
 func (client *Client) NewRequest(method, uri, realIP string, params url.Values) (req *xhttp.Request, err error) {
 	if method == xhttp.MethodGet {
-		req, err = xhttp.NewRequest(xhttp.MethodGet, uri+params.Encode(), nil)
+		req, err = xhttp.NewRequest(xhttp.MethodGet, uri+"?"+params.Encode(), nil)
 	} else {
 		req, err = xhttp.NewRequest(xhttp.MethodPost, uri, strings.NewReader(params.Encode()))
+	}
+	if err != nil {
+		return
+	}
+	const (
+		_contentType = "Content-Type"
+		_urlencoded  = "application/x-www-form-urlencoded"
+	)
+	if method == xhttp.MethodPost {
+		req.Header.Set(_contentType, _urlencoded)
 	}
 	return
 }

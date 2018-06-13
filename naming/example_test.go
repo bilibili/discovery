@@ -10,9 +10,9 @@ import (
 // This Example register a server provider into discovery.
 func ExampleDiscovery_Register() {
 	conf := &naming.Config{
-		Domain: "127.0.0.1:7171",
-		Zone:   "sh1",
-		Env:    "test",
+		Nodes: []string{"127.0.0.1:7171"},
+		Zone:  "sh1",
+		Env:   "test",
 	}
 	dis := naming.New(conf)
 	ins := &naming.Instance{
@@ -41,9 +41,9 @@ type consumer struct {
 // This Example show how get watch a server provier and get provider instances.
 func ExampleDiscovery_Watch() {
 	conf := &naming.Config{
-		Domain: "127.0.0.1:7171",
-		Zone:   "sh1",
-		Env:    "test",
+		Nodes: []string{"127.0.0.1:7171"},
+		Zone:  "sh1",
+		Env:   "test",
 	}
 	dis := naming.New(conf)
 	c := &consumer{
