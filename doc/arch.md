@@ -37,8 +37,8 @@
 ![discovery zone arch](discovery_zone_arch.png)
 
 * 机房定义为zone，表示“可用区”（可能两个相邻机房通过牛逼专线当一个机房用呢~~所以没用IDC~~）
-* zoneA将zoneB的SLB入口地址当做一个node(只是不需要同步信息)
+* zoneA使用zoneB的其中一个node地址(只是不需要同步信息)
     * 如zoneA内有node1,node2,node3，zoneB内有nodeI,nodeII,nodeIII
-    * zoneA入口zoneA.bilibili.com，zoneB入口zoneB.bilibili.com
-    * zoneA将zoneB.bilibili.com配入本身，当做一个特殊node，同时zoneB将zoneA.bilibili.com配入本身当做特殊node（请参考配置文件内zones）
-* 跨zone同步数据时，单向同步，zoneB.bilibili.com收到信息后，zoneB的nodeI,nodeII,nodeIII只做内部广播，不会再次向zoneA.bilibili.com广播
+    * zoneA将zoneB的nodeI配入本身配置文件内，当做一个特殊node，同时zoneB将zoneA的node1配入本身当做特殊node（请参考配置文件内zones）
+* 跨zone同步数据时，单向同步，zoneB的nodeI收到信息后，nodeI在nodeII,nodeIII之间只做内部广播，不会再次向zoneA的node广播
+* 如果有条件可以使用SLB，请参考[B站最佳实践](practice.md)

@@ -6,8 +6,8 @@ zone = "zone1"
 nodes = ["127.0.0.1:7171"]
 
 # 其他可用区zone访问host和其标识
+# "addr" = "zone name"
 # [zones]
-# "zone" = "zone2"
 # "127.0.0.2:7172" = "zone3"
 
 # 本节点监听端口

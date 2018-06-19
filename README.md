@@ -5,13 +5,13 @@
 
 Discovery is a based service that is production-ready and primarily used at [Bilibili](https://www.bilibili.com/) for locating services for the purpose of load balancing and failover of middle-tier servers.
 
-## 快速开始
+## Quick Start
 
-### 环境
+### env
 
-请使用go1.9.x及以上版本
+`go1.9.x` (and later)
 
-### 构建
+### build
 ```shell
 cd $GOPATH
 mkdir -p github.com/Bilibili
@@ -21,29 +21,29 @@ cd discovery/cmd/discovery
 go build
 ```
 
-### 运行
+### run
 ```shell
 ./discovery -conf discovery-example.toml -alsologtostderr
 ```
 
-`-alsologtostderr`是glog库的flag，表示输出到stderr，输出到目录是`-log_dir="/tmp"`，详细文档[点击查看](https://godoc.org/github.com/golang/glog)
+`-alsologtostderr` is `glog`'s flag，means print into stderr. If you hope print into file, can use `-log_dir="/tmp"`. [view glog doc](https://godoc.org/github.com/golang/glog).
 
-### 配置文件解读
+### Configuration
 
-请详细查看`cmd/discovery/discovery-example.toml`内注释说明
+You can view the comments in `cmd/discovery/discovery-example.toml` to understand the meaning of the config.
 
-### 客户端 
+### Client
 
-* [API文档](doc/api.md)
-* [GoSDK](naming/client.go) [接入示例](naming/example_test.go)
-* [JavaSDK](https://github.com/flygit/discoveryJavaSDK)
+* [API Doc](doc/api.md)
+* [Go SDK](naming/client.go) | [Example](naming/example_test.go)
+* [Java SDK](https://github.com/flygit/discoveryJavaSDK)
 
-## 背景及设计
+## Intro/Arch/Practice
 
-* [了解背后的故事](doc/intro.md)
-* [架构设计及原理](doc/arch.md)
-* [B站最佳实践](doc/practice.md)
+* [Introduction](doc/intro.md)
+* [Architecture](doc/arch.md)
+* [Practice in Bilibili](doc/practice.md)
 
-## 反馈及讨论
+## Feedback
 
-建议优先使用issues，也可加QQ群：716486124
+Please report bugs, concerns, suggestions by issues, or join QQ-group 716486124 to discuss problems around source code.
