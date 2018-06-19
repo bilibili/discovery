@@ -10,9 +10,9 @@ import (
 // This Example register a server provider into discovery.
 func ExampleDiscovery_Register() {
 	conf := &naming.Config{
-		Node: []string{"127.0.0.1:7171"}, // NOTE: 配置种子节点(1个或多个)，client内部可根据/discovery/nodes节点获取全部node(方便后面增减节点)
-		Zone: "sh1",
-		Env:  "test",
+		Nodes: []string{"127.0.0.1:7171"}, // NOTE: 配置种子节点(1个或多个)，client内部可根据/discovery/nodes节点获取全部node(方便后面增减节点)
+		Zone:  "sh1",
+		Env:   "test",
 	}
 	dis := naming.New(conf)
 	ins := &naming.Instance{
@@ -41,9 +41,9 @@ type consumer struct {
 // This Example show how get watch a server provier and get provider instances.
 func ExampleDiscovery_Watch() {
 	conf := &naming.Config{
-		Node: []string{"127.0.0.1:7171"},
-		Zone: "sh1",
-		Env:  "test",
+		Nodes: []string{"127.0.0.1:7171"},
+		Zone:  "sh1",
+		Env:   "test",
 	}
 	dis := naming.New(conf)
 	c := &consumer{

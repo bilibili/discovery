@@ -45,15 +45,15 @@ var (
 
 // Config discovery configures.
 type Config struct {
-	Node []string
-	Zone string
-	Env  string
-	Host string
+	Nodes []string
+	Zone  string
+	Env   string
+	Host  string
 }
 
 type appData struct {
-	ZoneInstances map[string][]*Instance `json:"zone_instances"`
-	LastTs        int64                  `json:"latest_timestamp"`
+	Instances map[string][]*Instance `json:"instances"`
+	LastTs    int64                  `json:"latest_timestamp"`
 }
 
 // Discovery is discovery client.
@@ -83,6 +83,9 @@ type appInfo struct {
 }
 
 func fixConfig(c *Config) {
+	if len(c.Nodes) == 0 {
+		panic("conf nodes can not be nil")
+	}
 	if c.Zone == "" {
 		c.Zone = os.Getenv("ZONE")
 	}
@@ -371,6 +374,7 @@ func (d *Discovery) serverproc() {
 		}
 		apps, err := d.polls(ctx)
 		if err != nil {
+			d.switchNode()
 			if ctx.Err() == context.Canceled {
 				ctx = nil
 				continue
@@ -386,7 +390,7 @@ func (d *Discovery) serverproc() {
 
 func (d *Discovery) pickNode() string {
 	if len(d.node) == 0 {
-		return d.c.Node[rand.Intn(len(d.c.Node))]
+		return d.c.Nodes[rand.Intn(len(d.c.Nodes))]
 	}
 	nodes := d.node
 	return nodes[d.nodeIdx%uint64(len(nodes))]
@@ -490,9 +494,9 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err err
 func (d *Discovery) broadcast(apps map[string]appData) {
 	for appID, v := range apps {
 		var count int
-		for zone, ins := range v.ZoneInstances {
+		for zone, ins := range v.Instances {
 			if len(ins) == 0 {
-				delete(v.ZoneInstances, zone)
+				delete(v.Instances, zone)
 			}
 			count += len(ins)
 		}
@@ -504,7 +508,7 @@ func (d *Discovery) broadcast(apps map[string]appData) {
 		d.mutex.RUnlock()
 		if ok {
 			app.lastTs = v.LastTs
-			app.zoneIns.Store(v.ZoneInstances)
+			app.zoneIns.Store(v.Instances)
 			select {
 			case app.event <- struct{}{}:
 			default:
