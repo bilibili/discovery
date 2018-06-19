@@ -13,9 +13,9 @@ Discovery is a based service that is production-ready and primarily used at [Bil
 
 ### 构建
 ```shell
-cd $GOPATH
+cd $GOPATH/src
 mkdir -p github.com/Bilibili
-cd $GOPATH/github.com/Bilibili
+cd github.com/Bilibili
 git clone https://github.com/Bilibili/discovery.git
 cd discovery/cmd/discovery
 go build
