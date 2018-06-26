@@ -24,9 +24,8 @@ const (
 	_registerURL = "http://%s/discovery/register"
 	_cancelURL   = "http://%s/discovery/cancel"
 	_renewURL    = "http://%s/discovery/renew"
-
-	_pollURL  = "http://%s/discovery/polls"
-	_nodesURL = "http://%s/discovery/nodes"
+	_pollURL     = "http://%s/discovery/polls"
+	_nodesURL    = "http://%s/discovery/nodes"
 
 	_registerGap = 30 * time.Second
 
@@ -65,14 +64,16 @@ type Discovery struct {
 	cancelFunc context.CancelFunc
 	httpClient *http.Client
 
+	node    []string
+	nodeIdx uint64
+
 	mutex       sync.RWMutex
 	apps        map[string]*appInfo
 	registry    map[string]struct{}
 	lastHost    string
 	cancelPolls context.CancelFunc
-	idx         uint64
-	node        []string
-	delete      chan *appInfo
+
+	delete chan *appInfo
 }
 
 type appInfo struct {
@@ -94,18 +95,6 @@ func fixConfig(c *Config) {
 	if c.Host == "" {
 		c.Host, _ = os.Hostname()
 	}
-}
-
-func (d *Discovery) pickNode() string {
-	if len(d.node) == 0 {
-		return d.c.Nodes[r.Intn(len(d.c.Nodes))]
-	}
-	nodes := d.node
-	return nodes[d.idx%uint64(len(nodes))]
-}
-
-func (d *Discovery) switchNode() {
-	atomic.AddUint64(&d.idx, 1)
 }
 
 // New new a discovery client.
@@ -240,37 +229,6 @@ func (d *Discovery) Register(ins *Instance) (cancelFunc context.CancelFunc, err 
 	return
 }
 
-// cancel Remove the registered instance from discovery
-func (d *Discovery) cancel(ins *Instance) (err error) {
-	d.mutex.RLock()
-	c := d.c
-	d.mutex.RUnlock()
-
-	res := new(struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	})
-	uri := fmt.Sprintf(_cancelURL, d.pickNode())
-	params := d.newParams(c)
-	params.Set("appid", ins.AppID)
-	// request
-	if err = d.httpClient.Post(context.TODO(), uri, "", params, &res); err != nil {
-		d.switchNode()
-		log.Errorf("discovery cancel client.Get(%v) env(%s) appid(%s) hostname(%s) error(%v)",
-			uri, c.Env, ins.AppID, c.Host, err)
-		return
-	}
-	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
-		log.Warningf("discovery cancel client.Get(%v)  env(%s) appid(%s) hostname(%s) code(%v)",
-			uri, c.Env, ins.AppID, c.Host, res.Code)
-		err = ec
-		return
-	}
-	log.Infof("discovery cancel client.Get(%v)  env(%s) appid(%s) hostname(%s) success",
-		uri, c.Env, ins.AppID, c.Host)
-	return
-}
-
 // register Register an instance with discovery
 func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 	d.mutex.RLock()
@@ -343,6 +301,37 @@ func (d *Discovery) renew(ctx context.Context, ins *Instance) (err error) {
 	return
 }
 
+// cancel Remove the registered instance from discovery
+func (d *Discovery) cancel(ins *Instance) (err error) {
+	d.mutex.RLock()
+	c := d.c
+	d.mutex.RUnlock()
+
+	res := new(struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	})
+	uri := fmt.Sprintf(_cancelURL, d.pickNode())
+	params := d.newParams(c)
+	params.Set("appid", ins.AppID)
+	// request
+	if err = d.httpClient.Post(context.TODO(), uri, "", params, &res); err != nil {
+		d.switchNode()
+		log.Errorf("discovery cancel client.Get(%v) env(%s) appid(%s) hostname(%s) error(%v)",
+			uri, c.Env, ins.AppID, c.Host, err)
+		return
+	}
+	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
+		log.Warningf("discovery cancel client.Get(%v)  env(%s) appid(%s) hostname(%s) code(%v)",
+			uri, c.Env, ins.AppID, c.Host, res.Code)
+		err = ec
+		return
+	}
+	log.Infof("discovery cancel client.Get(%v)  env(%s) appid(%s) hostname(%s) success",
+		uri, c.Env, ins.AppID, c.Host)
+	return
+}
+
 func (d *Discovery) serverproc() {
 	var (
 		retry  int
@@ -381,8 +370,9 @@ func (d *Discovery) serverproc() {
 			shuffle(len(tnodes), func(i, j int) {
 				tnodes[i], tnodes[j] = tnodes[j], tnodes[i]
 			})
+			d.node = tnodes
 		}
-		apps, err := d.polls(ctx, d.pickNode())
+		apps, err := d.polls(ctx)
 		if err != nil {
 			d.switchNode()
 			if ctx.Err() == context.Canceled {
@@ -396,6 +386,18 @@ func (d *Discovery) serverproc() {
 		retry = 0
 		d.broadcast(apps)
 	}
+}
+
+func (d *Discovery) pickNode() string {
+	if len(d.node) == 0 {
+		return d.c.Nodes[rand.Intn(len(d.c.Nodes))]
+	}
+	nodes := d.node
+	return nodes[d.nodeIdx%uint64(len(nodes))]
+}
+
+func (d *Discovery) switchNode() {
+	atomic.AddUint64(&d.nodeIdx, 1)
 }
 
 func (d *Discovery) nodes() (nodes []string) {
@@ -426,10 +428,11 @@ func (d *Discovery) nodes() (nodes []string) {
 	return
 }
 
-func (d *Discovery) polls(ctx context.Context, host string) (apps map[string]appData, err error) {
+func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err error) {
 	var (
 		lastTss []int64
 		appIDs  []string
+		host    = d.pickNode()
 		changed bool
 	)
 	if host != d.lastHost {
@@ -464,6 +467,7 @@ func (d *Discovery) polls(ctx context.Context, host string) (apps map[string]app
 		params.Add("latest_timestamp", strconv.FormatInt(ts, 10))
 	}
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
+		d.switchNode()
 		log.Errorf("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)
 		return
 	}

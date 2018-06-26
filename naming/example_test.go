@@ -10,7 +10,7 @@ import (
 // This Example register a server provider into discovery.
 func ExampleDiscovery_Register() {
 	conf := &naming.Config{
-		Nodes: []string{"127.0.0.1:7171"},
+		Nodes: []string{"127.0.0.1:7171"}, // NOTE: 配置种子节点(1个或多个)，client内部可根据/discovery/nodes节点获取全部node(方便后面增减节点)
 		Zone:  "sh1",
 		Env:   "test",
 	}
