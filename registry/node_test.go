@@ -27,17 +27,31 @@ func TestReplicate(t *testing.T) {
 		httpMock("POST", "http://127.0.0.1:7173/discovery/register").Reply(200).JSON(`{"code":0}`)
 		err := nodes.Replicate(context.TODO(), model.Register, i, false)
 		So(err, ShouldBeNil)
+		err = nodes.Replicate(context.TODO(), model.Renew, i, false)
+		So(err, ShouldBeNil)
+		err = nodes.Replicate(context.TODO(), model.Cancel, i, false)
+		So(err, ShouldBeNil)
 	})
 }
 
 func TestNodes(t *testing.T) {
-	Convey("test replicate set", t, func() {
+	Convey("test nodes", t, func() {
 		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
+			Zones:      map[string]string{"zone": "127.0.0.1:7172"},
 		})
 		res := nodes.Nodes()
 		So(len(res), ShouldResemble, 3)
+	})
+	Convey("test all nodes", t, func() {
+		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
+			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
+			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
+			Zones:      map[string]string{"zone": "127.0.0.1:7172"},
+		})
+		res := nodes.AllNodes()
+		So(len(res), ShouldResemble, 4)
 	})
 }
 
