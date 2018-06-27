@@ -2,6 +2,7 @@ package registry
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -188,6 +189,49 @@ func TestPolls(t *testing.T) {
 		So(len(c), ShouldResemble, 2)
 	})
 }
+
+func TestPollsChan(t *testing.T) {
+	i1 := model.NewInstance(reg)
+	i2 := model.NewInstance(reg2)
+	r := register(t, i1, i2)
+
+	Convey("test polls parallel", t, func(c C) {
+		var (
+			wg       sync.WaitGroup
+			ch1, ch2 chan map[string]*model.InstanceInfo
+			new      bool
+			err      error
+		)
+		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", LatestTimestamp: []int64{time.Now().UnixNano(), time.Now().UnixNano()}, AppID: []string{"main.arch.test", "main.arch.test2"}, Hostname: "csq"}
+		ch1, new, err = r.Polls(pollArg)
+		c.So(err, ShouldEqual, errors.NotModified)
+		c.So(new, ShouldBeFalse)
+		c.So(ch1, ShouldNotBeNil)
+		ch2, new, err = r.Polls(pollArg)
+		c.So(err, ShouldEqual, errors.NotModified)
+		c.So(new, ShouldBeFalse)
+		c.So(ch2, ShouldNotBeNil)
+		// wait group
+		wg.Add(2)
+		go func() {
+			res := <-ch1
+			c.So(len(res), ShouldResemble, 1)
+			wg.Done()
+		}()
+		go func() {
+			res := <-ch2
+			c.So(len(res), ShouldResemble, 1)
+			wg.Done()
+		}()
+		// re register when 1s later, make sure latest_timestamp changed
+		time.Sleep(time.Second)
+		h1 := model.NewInstance(regH1)
+		r.Register(h1, 0)
+		// wait
+		wg.Wait()
+	})
+}
+
 func BenchmarkPoll(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
