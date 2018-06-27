@@ -94,7 +94,7 @@ func poll(c *gin.Context) {
 		result(c, nil, errors.ParamsErr)
 		return
 	}
-	ch, _, err := dis.Polls(c, arg)
+	ch, new, err := dis.Polls(c, arg)
 	if err != nil && err != errors.NotModified {
 		result(c, nil, err)
 		return
@@ -103,15 +103,16 @@ func poll(c *gin.Context) {
 	select {
 	case e := <-ch:
 		result(c, resp{Data: e[arg.AppID[0]]}, nil)
-		dis.PutChan(ch)
-		// broadcast will delete all connections of appid
+		if !new {
+			dis.DelConns(arg) // broadcast will delete all connections of appid
+		}
+		return
 	case <-time.After(_pollWaitSecond):
 		result(c, nil, errors.NotModified)
-		dis.DelConns(arg)
 	case <-c.Writer.(http.CloseNotifier).CloseNotify():
-		result(c, nil, errors.NotModified)
-		dis.DelConns(arg)
 	}
+	result(c, nil, errors.NotModified)
+	dis.DelConns(arg)
 }
 
 func polls(c *gin.Context) {
@@ -133,19 +134,15 @@ func polls(c *gin.Context) {
 	select {
 	case e := <-ch:
 		result(c, e, nil)
-		if new {
-			dis.PutChan(ch)
-		} else {
-			dis.DelConns(arg)
+		if !new {
+			dis.DelConns(arg) // broadcast will delete all connections of appid
 		}
-		// broadcast will delete all connections of appid
+		return
 	case <-time.After(_pollWaitSecond):
-		result(c, nil, errors.NotModified)
-		dis.DelConns(arg)
 	case <-c.Writer.(http.CloseNotifier).CloseNotify():
-		result(c, nil, errors.NotModified)
-		dis.DelConns(arg)
 	}
+	result(c, nil, errors.NotModified)
+	dis.DelConns(arg)
 }
 
 func set(c *gin.Context) {

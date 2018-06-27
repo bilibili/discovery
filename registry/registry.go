@@ -22,9 +22,9 @@ type Registry struct {
 	aLock sync.RWMutex
 
 	conns map[string]map[string]*conn // region.zone.env.appid-> host
-	pool  sync.Pool
 	cLock sync.RWMutex
-	gd    *Guard
+
+	gd *Guard
 }
 
 // conn the poll chan contains consumer.
@@ -32,11 +32,12 @@ type conn struct {
 	ch         chan map[string]*model.InstanceInfo // TODO(felix): increase
 	arg        *model.ArgPolls
 	latestTime int64
+	count      int
 }
 
 // newConn new consumer chan.
 func newConn(ch chan map[string]*model.InstanceInfo, latestTime int64, arg *model.ArgPolls) *conn {
-	return &conn{ch: ch, latestTime: latestTime, arg: arg}
+	return &conn{ch: ch, latestTime: latestTime, arg: arg, count: 1}
 }
 
 // NewRegistry new register.
@@ -45,7 +46,6 @@ func NewRegistry() (r *Registry) {
 		appm:  make(map[string]*model.Apps),
 		conns: make(map[string]map[string]*conn),
 		gd:    new(Guard),
-		pool:  sync.Pool{New: func() interface{} { return make(chan map[string]*model.InstanceInfo, 1) }},
 	}
 	go r.proc()
 	return
@@ -176,7 +176,6 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 	if len(arg.AppID) != len(arg.LatestTimestamp) {
 		arg.LatestTimestamp = make([]int64, len(arg.AppID))
 	}
-	ch = r.pool.Get().(chan map[string]*model.InstanceInfo)
 	for i := range arg.AppID {
 		in, err = r.Fetch(arg.Zone, arg.Env, arg.AppID[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
 		if err == errors.NothingFound {
@@ -189,16 +188,29 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 		}
 	}
 	if new {
+		ch = make(chan map[string]*model.InstanceInfo, 1)
 		ch <- ins
 		return
 	}
 	r.cLock.Lock()
-	ch = r.pool.Get().(chan map[string]*model.InstanceInfo)
 	for i := range arg.AppID {
 		k := pollKey(arg.Env, arg.AppID[i])
-		connection := newConn(ch, arg.LatestTimestamp[i], arg)
 		if _, ok := r.conns[k]; !ok {
 			r.conns[k] = make(map[string]*conn, 1)
+		}
+		connection, ok := r.conns[k][arg.Hostname]
+		if !ok {
+			if ch == nil {
+				ch = make(chan map[string]*model.InstanceInfo, 5) // NOTE: there maybe have more than one connection on the same hostname!!!
+			}
+			connection = newConn(ch, arg.LatestTimestamp[i], arg)
+			log.Infof("Polls from(%s) new connection(%d)", arg.Hostname, connection.count)
+		} else {
+			connection.count++ // NOTE: there maybe have more than one connection on the same hostname!!!
+			if ch == nil {
+				ch = connection.ch
+			}
+			log.Infof("Polls from(%s) reuse connection(%d)", arg.Hostname, connection.count)
 		}
 		r.conns[k][arg.Hostname] = connection
 	}
@@ -211,19 +223,21 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 func (r *Registry) broadcast(zone, env, appid string, a *model.App) {
 	key := pollKey(env, appid)
 	r.cLock.Lock()
+	defer r.cLock.Unlock()
 	conns, ok := r.conns[key]
 	if !ok {
-		r.cLock.Unlock()
 		return
 	}
 	delete(r.conns, key)
-	r.cLock.Unlock()
 	for _, conn := range conns {
 		ii, _ := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
-		select {
-		case conn.ch <- map[string]*model.InstanceInfo{a.AppID: ii}: // NOTE: if chan is full, means no poller.
-		default:
-			log.Errorf("s.broadcast err, channel full(%v)", ii)
+		for i := 0; i < conn.count; i++ {
+			select {
+			case conn.ch <- map[string]*model.InstanceInfo{a.AppID: ii}: // NOTE: if chan is full, means no poller.
+				log.Infof("broadcast to(%s) success(%d)", conn.arg.Hostname, i+1)
+			case <-time.After(time.Millisecond * 500):
+				log.Infof("broadcast to(%s) failed(%d) maybe chan full", conn.arg.Hostname, i+1)
+			}
 		}
 	}
 }
@@ -323,7 +337,6 @@ func (r *Registry) evict() {
 
 // DelConns delete conn of host in appid
 func (r *Registry) DelConns(arg *model.ArgPolls) {
-	var connection *conn
 	r.cLock.Lock()
 	for i := range arg.AppID {
 		k := pollKey(arg.Env, arg.AppID[i])
@@ -332,21 +345,15 @@ func (r *Registry) DelConns(arg *model.ArgPolls) {
 			log.Warningf("DelConn key(%s) not found", k)
 			continue
 		}
-		conn, ok := conns[arg.Hostname]
-		if !ok {
-			log.Warningf("DelConn key(%s) host(%s) not found", k, arg.Hostname)
-			continue
+		if connection, ok := conns[arg.Hostname]; ok {
+			if connection.count > 1 {
+				log.Infof("DelConns from(%s) count decr(%d)", arg.Hostname, connection.count)
+				connection.count--
+			} else {
+				log.Infof("DelConns from(%s) delete(%d)", arg.Hostname, connection.count)
+				delete(conns, arg.Hostname)
+			}
 		}
-		connection = conn
-		delete(conns, arg.Hostname)
 	}
 	r.cLock.Unlock()
-	if connection != nil {
-		r.PutChan(connection.ch)
-	}
-}
-
-// PutChan put chan into pool.
-func (r *Registry) PutChan(ch chan map[string]*model.InstanceInfo) {
-	r.pool.Put(ch)
 }
