@@ -393,7 +393,7 @@ func (d *Discovery) pickNode() string {
 		return d.c.Nodes[rand.Intn(len(d.c.Nodes))]
 	}
 	nodes := d.node
-	return nodes[d.nodeIdx%uint64(len(nodes))]
+	return nodes[atomic.LoadUint64(&d.nodeIdx)%uint64(len(nodes))]
 }
 
 func (d *Discovery) switchNode() {
