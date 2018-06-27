@@ -1,8 +1,9 @@
-package naming_test
+package naming
 
 import (
 	"context"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/Bilibili/discovery/http"
 	xhttp "github.com/Bilibili/discovery/lib/http"
 	xtime "github.com/Bilibili/discovery/lib/time"
-	"github.com/Bilibili/discovery/naming"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -33,16 +33,15 @@ func mockDiscoverySvr() {
 	})
 }
 func TestDiscovery(t *testing.T) {
-	conf := &naming.Config{
+	os.Setenv("ZONE", "test")
+	os.Setenv("DEPLOY_ENV", "test")
+	conf := &Config{
 		Nodes: []string{"127.0.0.1:7171"},
-		Zone:  "test",
-		Env:   "test",
-		Host:  "aa",
 	}
-	dis := naming.New(conf)
+	dis := New(conf)
 	appid := "test1"
 	Convey("test discovery register", t, func() {
-		instance := &naming.Instance{
+		instance := &Instance{
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
@@ -50,6 +49,16 @@ func TestDiscovery(t *testing.T) {
 		}
 		_, err := dis.Register(instance)
 		So(err, ShouldBeNil)
+		conf.Nodes = []string{"127.0.0.1:7172"}
+		dis.Reload(conf)
+		instance.AppID = "test2"
+		//instance.Metadata = map[string]string{"meta": "meta"}
+		_, err = dis.Register(instance)
+		So(err, ShouldNotBeNil)
+		dis.renew(context.TODO(), instance)
+		conf.Nodes = []string{"127.0.0.1:7171"}
+		dis.Reload(conf)
+		dis.renew(context.TODO(), instance)
 	})
 	Convey("test discovery watch", t, func() {
 		ch := dis.Watch(appid)
@@ -58,7 +67,7 @@ func TestDiscovery(t *testing.T) {
 		So(ok, ShouldBeTrue)
 		So(len(ins["test"]), ShouldEqual, 1)
 		So(ins["test"][0].AppID, ShouldEqual, appid)
-		instance2 := &naming.Instance{
+		instance2 := &Instance{
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
@@ -72,10 +81,17 @@ func TestDiscovery(t *testing.T) {
 		So(ok, ShouldBeTrue)
 		So(len(ins["test"]), ShouldEqual, 2)
 		So(ins["test"][0].AppID, ShouldEqual, appid)
+		dis.Unwatch(appid)
+		_, ok = dis.Fetch(appid)
+		So(ok, ShouldBeFalse)
+		conf.Nodes = []string{"127.0.0.1:7172"}
+		dis.Reload(conf)
+		So(dis.Scheme(), ShouldEqual, "discovery")
+		dis.Close()
 	})
 }
 
-func addNewInstance(ins *naming.Instance) error {
+func addNewInstance(ins *Instance) error {
 	cli := xhttp.NewClient(&xhttp.ClientConfig{
 		Dial:      xtime.Duration(time.Second),
 		KeepAlive: xtime.Duration(time.Second * 30),
