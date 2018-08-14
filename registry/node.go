@@ -81,6 +81,23 @@ func (n *Node) Cancel(c context.Context, i *model.Instance) (err error) {
 // Renew send the heartbeat information of Instance receiving by this node to the peer node represented.
 // If the instance does not exist the node, the instance registration information is sent again to the peer node.
 func (n *Node) Renew(c context.Context, i *model.Instance) (err error) {
+	var res *model.Instance
+	err = n.call(c, model.Renew, i, n.renewURL, &res)
+	if err == errors.ServerErr {
+		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+		n.status = model.NodeStatusLost
+		return
+	}
+	n.status = model.NodeStatusUP
+	if err == errors.NothingFound {
+		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+		err = n.call(c, model.Register, i, n.registerURL, nil)
+		return
+	}
+	// NOTE: register response instance whitch in conflict with peer node
+	if err == errors.Conflict && res != nil {
+		err = n.call(c, model.Register, res, n.pRegisterURL, nil)
+	}
 	return
 }
 

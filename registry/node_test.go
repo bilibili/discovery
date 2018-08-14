@@ -116,6 +116,7 @@ func TestNodeRenew2(t *testing.T) {
 		node := newNode(&dc.Config{HTTPClient: &http.ClientConfig{}, HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"}, Nodes: []string{"127.0.0.1:7171"}}, "127.0.0.1:7172")
 		node.client.SetTransport(gock.DefaultTransport)
 		httpMock("POST", "http://127.0.0.1:7172/discovery/renew").Reply(200).JSON(`{"code":-404}`)
+		httpMock("POST", "http://127.0.0.1:7172/discovery/register").Reply(200).JSON(`{"code":0}`)
 		httpMock("POST", "http://127.0.0.1:7171/discovery/register").Reply(200).JSON(`{"code":0}`)
 		err := node.Renew(context.TODO(), i)
 		So(err, ShouldBeNil)
