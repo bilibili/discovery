@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	_ Resolver = &Discovery{}
+	_ Builder  = &Discovery{}
 	_ Registry = &Discovery{}
 
 	// ErrDuplication duplication treeid.
@@ -77,9 +77,9 @@ type Discovery struct {
 }
 
 type appInfo struct {
-	event   chan struct{}
-	zoneIns atomic.Value
-	lastTs  int64 // latest timestamp
+	resolver map[*Resolve]struct{}
+	zoneIns  atomic.Value
+	lastTs   int64 // latest timestamp
 }
 
 func fixConfig(c *Config) {
@@ -119,50 +119,78 @@ func New(c *Config) (d *Discovery) {
 	return
 }
 
-// Fetch returns the latest discovered instances by treeID
-func (d *Discovery) Fetch(appID string) (ins map[string][]*Instance, ok bool) {
-	d.mutex.RLock()
-	app, ok := d.apps[appID]
-	d.mutex.RUnlock()
-	if ok {
-		ins, ok = app.zoneIns.Load().(map[string][]*Instance)
+// Build disovery resovler builder.
+func (d *Discovery) Build(appid string) Resolver {
+	r := &Resolve{
+		id:    appid,
+		d:     d,
+		event: make(chan struct{}, 1),
 	}
-	return
-}
-
-// Unwatch unwatch app changes.
-func (d *Discovery) Unwatch(appID string) {
 	d.mutex.Lock()
-	app, ok := d.apps[appID]
-	if ok {
-		delete(d.apps, appID)
-	}
-	d.mutex.Unlock()
-	if ok {
-		d.delete <- app
-	}
-}
-
-// Watch watch the change of app instances by treeId  and return a chan to notify the instance change
-func (d *Discovery) Watch(appID string) <-chan struct{} {
-	d.mutex.RLock()
-	app, ok := d.apps[appID]
-	d.mutex.RUnlock()
+	app, ok := d.apps[appid]
 	if !ok {
-		app = &appInfo{event: make(chan struct{}, 1)}
-		d.mutex.Lock()
-		d.apps[appID] = app
+		app = &appInfo{
+			resolver: make(map[*Resolve]struct{}),
+		}
+		d.apps[appid] = app
 		cancel := d.cancelPolls
-		d.mutex.Unlock()
-		log.Infof("disocvery: AddWatch(%s)", appID)
 		if cancel != nil {
 			cancel()
 		}
 	}
+	app.resolver[r] = struct{}{}
+	d.mutex.Unlock()
+	if ok {
+		select {
+		case r.event <- struct{}{}:
+		default:
+		}
+	}
+	log.Info("disocvery: AddWatch(%s) already watch(%v)", appid, ok)
 	d.once.Do(func() {
 		go d.serverproc()
 	})
-	return app.event
+	return r
+}
+
+// Scheme return discovery's scheme
+func (d *Discovery) Scheme() string {
+	return "discovery"
+}
+
+// Resolve discveory resolver.
+type Resolve struct {
+	id    string
+	event chan struct{}
+	d     *Discovery
+}
+
+// Watch watch instance.
+func (r *Resolve) Watch() <-chan struct{} {
+	return r.event
+}
+
+// Fetch fetch resolver instance.
+func (r *Resolve) Fetch() (ins map[string][]*Instance, ok bool) {
+	r.d.mutex.RLock()
+	app, ok := r.d.apps[r.id]
+	r.d.mutex.RUnlock()
+	if ok {
+		ins, ok = app.zoneIns.Load().(map[string][]*Instance)
+		return
+	}
+	return
+}
+
+// Close close resolver.
+func (r *Resolve) Close() error {
+	r.d.mutex.Lock()
+	if app, ok := r.d.apps[r.id]; ok && len(app.resolver) != 0 {
+		delete(app.resolver, r)
+		// TODO: delete app from builder
+	}
+	r.d.mutex.Unlock()
+	return nil
 }
 
 // Reload reload the config
@@ -177,11 +205,6 @@ func (d *Discovery) Reload(c *Config) {
 func (d *Discovery) Close() error {
 	d.cancelFunc()
 	return nil
-}
-
-// Scheme return discovery's scheme
-func (d *Discovery) Scheme() string {
-	return "discovery"
 }
 
 // Register Register an instance with discovery and renew automatically
@@ -353,8 +376,6 @@ func (d *Discovery) serverproc() {
 			return
 		case <-ticker.C:
 			update = true
-		case app := <-d.delete:
-			close(app.event)
 		default:
 		}
 		if len(d.node) == 0 || update {
@@ -509,10 +530,14 @@ func (d *Discovery) broadcast(apps map[string]appData) {
 		if ok {
 			app.lastTs = v.LastTs
 			app.zoneIns.Store(v.Instances)
-			select {
-			case app.event <- struct{}{}:
-			default:
+			d.mutex.RLock()
+			for rs := range app.resolver {
+				select {
+				case rs.event <- struct{}{}:
+				default:
+				}
 			}
+			d.mutex.RUnlock()
 		}
 	}
 }

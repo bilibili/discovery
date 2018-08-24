@@ -34,7 +34,7 @@ func ExampleDiscovery_Register() {
 type consumer struct {
 	conf  *naming.Config
 	appID string
-	dis   *naming.Discovery
+	dis   naming.Resolver
 	ins   []*naming.Instance
 }
 
@@ -49,9 +49,10 @@ func ExampleDiscovery_Watch() {
 	c := &consumer{
 		conf:  conf,
 		appID: "provider",
-		dis:   dis,
+		dis:   dis.Build("provider"),
 	}
-	ch := dis.Watch(c.appID)
+	rsl := dis.Build(c.appID)
+	ch := rsl.Watch()
 	go c.getInstances(ch)
 	in := c.getInstance()
 	_ = in
@@ -63,7 +64,7 @@ func (c *consumer) getInstances(ch <-chan struct{}) {
 			return
 		}
 		// NOTE: <= 实时fetch最新的instance实例
-		ins, ok := c.dis.Fetch(c.appID)
+		ins, ok := c.dis.Fetch()
 		if !ok {
 			continue
 		}

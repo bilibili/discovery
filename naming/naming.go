@@ -30,15 +30,19 @@ type Instance struct {
 
 // Resolver resolve naming service
 type Resolver interface {
-	Fetch(id string) (map[string][]*Instance, bool)
-	Unwatch(id string)
-	Watch(id string) <-chan struct{}
+	Fetch() (map[string][]*Instance, bool)
+	Watch() <-chan struct{}
 	Close() error
-	Scheme() string
 }
 
 // Registry Register an instance and renew automatically
 type Registry interface {
 	Register(ins *Instance) (cancel context.CancelFunc, err error)
 	Close() error
+}
+
+// Builder resolver builder.
+type Builder interface {
+	Build(id string) Resolver
+	Scheme() string
 }
