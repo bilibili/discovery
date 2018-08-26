@@ -61,9 +61,10 @@ func TestDiscovery(t *testing.T) {
 		dis.renew(context.TODO(), instance)
 	})
 	Convey("test discovery watch", t, func() {
-		ch := dis.Watch(appid)
+		rsl := dis.Build(appid)
+		ch := rsl.Watch()
 		<-ch
-		ins, ok := dis.Fetch(appid)
+		ins, ok := rsl.Fetch()
 		So(ok, ShouldBeTrue)
 		So(len(ins["test"]), ShouldEqual, 1)
 		So(ins["test"][0].AppID, ShouldEqual, appid)
@@ -77,13 +78,11 @@ func TestDiscovery(t *testing.T) {
 		So(err, ShouldBeNil)
 		// watch for next update
 		<-ch
-		ins, ok = dis.Fetch(appid)
+		ins, ok = rsl.Fetch()
 		So(ok, ShouldBeTrue)
 		So(len(ins["test"]), ShouldEqual, 2)
 		So(ins["test"][0].AppID, ShouldEqual, appid)
-		dis.Unwatch(appid)
-		_, ok = dis.Fetch(appid)
-		So(ok, ShouldBeFalse)
+		rsl.Close()
 		conf.Nodes = []string{"127.0.0.1:7172"}
 		dis.Reload(conf)
 		So(dis.Scheme(), ShouldEqual, "discovery")
