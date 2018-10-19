@@ -33,6 +33,8 @@ const (
 
 	_errCodeOK = 0
 	_errCodeNF = -404
+
+	_appid = "infra.discovery"
 )
 
 var (
@@ -45,10 +47,11 @@ var (
 
 // Config discovery configures.
 type Config struct {
-	Nodes []string
-	Zone  string
-	Env   string
-	Host  string
+	Nodes  []string
+	Region string
+	Zone   string
+	Env    string
+	Host   string
 }
 
 type appData struct {
@@ -86,6 +89,9 @@ func fixConfig(c *Config) {
 	if len(c.Nodes) == 0 {
 		panic("conf nodes can not be nil")
 	}
+	if c.Region == "" {
+		c.Region = os.Getenv("REGION")
+	}
 	if c.Zone == "" {
 		c.Zone = os.Getenv("ZONE")
 	}
@@ -109,14 +115,72 @@ func New(c *Config) (d *Discovery) {
 		registry:   map[string]struct{}{},
 		delete:     make(chan *appInfo, 10),
 	}
-
 	// httpClient
 	cfg := &http.ClientConfig{
 		Dial:      xtime.Duration(3 * time.Second),
 		KeepAlive: xtime.Duration(40 * time.Second),
 	}
 	d.httpClient = http.NewClient(cfg)
+	// discovery self
+	resolver := d.Build(_appid)
+	event := resolver.Watch()
+	_, ok := <-event
+	if !ok {
+		panic("discovery watch failed")
+	}
+	ins, ok := resolver.Fetch()
+	if ok {
+		d.newSelf(ins)
+	}
+	go d.selfproc(resolver, event)
 	return
+}
+
+func (d *Discovery) selfproc(resolver Resolver, event <-chan struct{}) {
+	for {
+		_, ok := <-event
+		if !ok {
+			return
+		}
+		zones, ok := resolver.Fetch()
+		if ok {
+			d.newSelf(zones)
+		}
+	}
+}
+
+func (d *Discovery) newSelf(zones map[string][]*Instance) {
+	ins, ok := zones[d.c.Zone]
+	if !ok {
+		return
+	}
+	var nodes []string
+	for _, in := range ins {
+		for _, addr := range in.Addrs {
+			u, err := url.Parse(addr)
+			if err == nil && u.Scheme == "http" {
+				nodes = append(nodes, u.Host)
+			}
+		}
+	}
+	// diff old nodes
+	var olds int
+	for _, n := range nodes {
+		for _, o := range d.node {
+			if o == n {
+				olds++
+				break
+			}
+		}
+	}
+	if len(nodes) == olds {
+		return
+	}
+	// FIXME: we should use rand.Shuffle() in golang 1.10
+	shuffle(len(nodes), func(i, j int) {
+		nodes[i], nodes[j] = nodes[j], nodes[i]
+	})
+	d.node = nodes
 }
 
 // Build disovery resovler builder.
@@ -358,7 +422,6 @@ func (d *Discovery) cancel(ins *Instance) (err error) {
 func (d *Discovery) serverproc() {
 	var (
 		retry  int
-		update bool
 		ctx    context.Context
 		cancel context.CancelFunc
 	)
@@ -375,23 +438,7 @@ func (d *Discovery) serverproc() {
 		case <-d.ctx.Done():
 			return
 		case <-ticker.C:
-			update = true
 		default:
-		}
-		if len(d.node) == 0 || update {
-			update = false
-			tnodes := d.nodes()
-			if len(tnodes) == 0 {
-				time.Sleep(time.Second)
-				retry++
-				continue
-			}
-			retry = 0
-			// FIXME: we should use rand.Shuffle() in golang 1.10
-			shuffle(len(tnodes), func(i, j int) {
-				tnodes[i], tnodes[j] = tnodes[j], tnodes[i]
-			})
-			d.node = tnodes
 		}
 		apps, err := d.polls(ctx)
 		if err != nil {
@@ -544,6 +591,7 @@ func (d *Discovery) broadcast(apps map[string]appData) {
 
 func (d *Discovery) newParams(c *Config) url.Values {
 	params := url.Values{}
+	params.Set("region", c.Region)
 	params.Set("zone", c.Zone)
 	params.Set("env", c.Env)
 	params.Set("hostname", c.Host)

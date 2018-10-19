@@ -10,6 +10,11 @@ const (
 	NodeStatusLost
 )
 
+const (
+	// AppID is discvoery id
+	AppID = "infra.discovery"
+)
+
 // Node node
 type Node struct {
 	Addr   string     `json:"addr"`

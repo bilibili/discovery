@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Bilibili/discovery/conf"
+	"github.com/Bilibili/discovery/discovery"
 	"github.com/Bilibili/discovery/http"
 	xhttp "github.com/Bilibili/discovery/lib/http"
 	xtime "github.com/Bilibili/discovery/lib/time"
@@ -21,7 +22,7 @@ func TestMain(m *testing.M) {
 	m.Run()
 }
 func mockDiscoverySvr() {
-	http.Init(&conf.Config{
+	c := &conf.Config{
 		Zone:  "test",
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &conf.ServerConfig{
@@ -30,7 +31,9 @@ func mockDiscoverySvr() {
 		HTTPClient: &xhttp.ClientConfig{
 			Dial: xtime.Duration(1),
 		},
-	})
+	}
+	dis, _ := discovery.New(c)
+	http.Init(c, dis)
 }
 func TestDiscovery(t *testing.T) {
 	os.Setenv("ZONE", "test")

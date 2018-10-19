@@ -1,6 +1,8 @@
 package discovery
 
 import (
+	"context"
+
 	"github.com/Bilibili/discovery/conf"
 	"github.com/Bilibili/discovery/lib/http"
 	"github.com/Bilibili/discovery/registry"
@@ -12,11 +14,10 @@ type Discovery struct {
 	client   *http.Client
 	registry *registry.Registry
 	nodes    *registry.Nodes
-	// tLock    sync.RWMutex
 }
 
 // New get a discovery.
-func New(c *conf.Config) (d *Discovery) {
+func New(c *conf.Config) (d *Discovery, cancel context.CancelFunc) {
 	d = &Discovery{
 		c:        c,
 		client:   http.NewClient(c.HTTPClient),
@@ -24,5 +25,7 @@ func New(c *conf.Config) (d *Discovery) {
 		nodes:    registry.NewNodes(c),
 	}
 	d.syncUp()
+	cancel = d.regSelf()
+	go d.nodesproc()
 	return
 }

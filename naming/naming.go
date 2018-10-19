@@ -6,6 +6,8 @@ import (
 
 // Instance represents a server the client connects to.
 type Instance struct {
+	// Region is region.
+	Region string `json:"region"`
 	// Zone is IDC.
 	Zone string `json:"zone"`
 	// Env prod/pre、uat/fat1

@@ -2,6 +2,7 @@ package model
 
 // ArgRegister define register param.
 type ArgRegister struct {
+	Region          string   `form:"region"`
 	Zone            string   `form:"zone" validate:"required"`
 	Env             string   `form:"env" validate:"required"`
 	AppID           string   `form:"appid" validate:"required"`

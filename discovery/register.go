@@ -9,10 +9,10 @@ import (
 )
 
 // Register a new instance.
-func (d *Discovery) Register(c context.Context, ins *model.Instance, arg *model.ArgRegister) {
-	d.registry.Register(ins, arg.LatestTimestamp)
-	if !arg.Replication {
-		d.nodes.Replicate(c, model.Register, ins, arg.Zone != d.c.Zone)
+func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimestamp int64, replication bool) {
+	d.registry.Register(ins, latestTimestamp)
+	if replication {
+		d.nodes.Replicate(c, model.Register, ins, ins.Zone != d.c.Zone)
 	}
 }
 

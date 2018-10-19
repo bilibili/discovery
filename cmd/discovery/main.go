@@ -5,8 +5,10 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/Bilibili/discovery/conf"
+	"github.com/Bilibili/discovery/discovery"
 	"github.com/Bilibili/discovery/http"
 	log "github.com/golang/glog"
 )
@@ -17,8 +19,8 @@ func main() {
 		log.Errorf("conf.Init() error(%v)", err)
 		panic(err)
 	}
-	// http init
-	http.Init(conf.Conf)
+	dis, cancel := discovery.New(conf.Conf)
+	http.Init(conf.Conf, dis)
 	// init signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
@@ -27,6 +29,8 @@ func main() {
 		log.Infof("discovery get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			cancel()
+			time.Sleep(time.Second)
 			log.Info("discovery quit !!!")
 			log.Flush()
 			return

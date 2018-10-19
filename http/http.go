@@ -23,8 +23,8 @@ var (
 )
 
 // Init init http
-func Init(c *conf.Config) {
-	dis = discovery.New(c)
+func Init(c *conf.Config, d *discovery.Discovery) {
+	dis = d
 	gin.SetMode(gin.ReleaseMode)
 	engine := gin.New()
 	engine.Use(loggerHandler, recoverHandler)

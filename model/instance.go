@@ -46,6 +46,7 @@ const (
 // Instance holds information required for registration with
 // <Discovery Server> and to be discovered by other components.
 type Instance struct {
+	Region   string            `json:"region"`
 	Zone     string            `json:"zone"`
 	Env      string            `json:"env"`
 	AppID    string            `json:"appid"`
@@ -71,6 +72,7 @@ type Instance struct {
 func NewInstance(arg *ArgRegister) (i *Instance) {
 	now := time.Now().UnixNano()
 	i = &Instance{
+		Region:         arg.Region,
 		Zone:           arg.Zone,
 		Env:            arg.Env,
 		AppID:          arg.AppID,
