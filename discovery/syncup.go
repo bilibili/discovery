@@ -29,11 +29,11 @@ func (d *Discovery) syncUp() (err error) {
 			Data map[string][]*model.Instance `json:"data"`
 		}
 		if err = d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
-			log.Error("e.client.Get(%v) error(%v)", uri, err)
+			log.Errorf("d.client.Get(%v) error(%v)", uri, err)
 			continue
 		}
 		if res.Code != 0 {
-			log.Error("service syncup from(%s) failed ", uri)
+			log.Errorf("service syncup from(%s) failed ", uri)
 			continue
 		}
 		for _, is := range res.Data {

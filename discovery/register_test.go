@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +43,6 @@ func newPoll() *model.ArgPolls {
 }
 func defRegisArg() *model.ArgRegister {
 	return &model.ArgRegister{
-		LatestTimestamp: time.Now().Unix(),
 		AppID:           "main.arch.test",
 		Hostname:        "test1",
 		Color:           "red",
@@ -50,6 +50,19 @@ func defRegisArg() *model.ArgRegister {
 		Env:             "pre",
 		Status:          1,
 		Metadata:        `{"test":"test","weight":"10"}`,
+		LatestTimestamp: time.Now().UnixNano(),
+	}
+}
+func defRegDiscovery() *model.Instance {
+	return &model.Instance{
+		AppID:           "infra.discovery",
+		Hostname:        "test2",
+		Color:           "red",
+		Zone:            "sh001",
+		Env:             "pre",
+		Status:          1,
+		Addrs:           []string{"http://127.0.0.1:7172"},
+		LatestTimestamp: time.Now().UnixNano(),
 	}
 }
 
@@ -66,9 +79,12 @@ func newConfig() *dc.Config {
 	}
 }
 func init() {
-	httpMock("GET", "http://127.0.0.1:7172/discovery/fetch/all").Reply(200).JSON(`{"code":1}`)
-	httpMock("POST", "http://127.0.0.1:7172/discovery/regist").Reply(200).JSON(`{"code":0}`)
+	httpMock("GET", "http://127.0.0.1:7172/discovery/fetch/all").Reply(200).JSON(`{"code":0}`)
+	httpMock("POST", "http://127.0.0.1:7172/discovery/register").Reply(200).JSON(`{"code":0}`)
 	httpMock("POST", "http://127.0.0.1:7172/discovery/cancel").Reply(200).JSON(`{"code":0}`)
+
+	os.Setenv("ZONE", "sh001")
+	os.Setenv("DEPLOY_ENV", "pre")
 }
 
 func httpMock(method, url string) *gock.Request {
@@ -254,6 +270,8 @@ func TestNodes(t *testing.T) {
 		svr, cancel := New(config)
 		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
+		svr.Register(context.Background(), defRegDiscovery(), time.Now().UnixNano(), false)
+		time.Sleep(time.Second)
 		ns := svr.Nodes(context.TODO())
 		So(len(ns), ShouldResemble, 2)
 	})
