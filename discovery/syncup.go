@@ -90,7 +90,7 @@ func (d *Discovery) regSelf() context.CancelFunc {
 					Hostname: ins.Hostname,
 				}
 				if err := d.Cancel(context.Background(), arg); err != nil {
-					log.Errorf("s.Cancel(%+v) error(%v)", arg, err)
+					log.Errorf("d.Cancel(%+v) error(%v)", arg, err)
 				}
 				return
 			}
@@ -113,7 +113,7 @@ func (d *Discovery) nodesproc() {
 		arg.Hostname, _ = os.Hostname()
 		ch, _, err := d.registry.Polls(arg)
 		if err != nil && err != errors.NotModified {
-			log.Errorf("s.registry(%v) error(%v)", arg, err)
+			log.Errorf("d.registry(%v) error(%v)", arg, err)
 			time.Sleep(time.Second)
 			continue
 		}
