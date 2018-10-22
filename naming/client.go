@@ -210,7 +210,7 @@ func (d *Discovery) Build(appid string) Resolver {
 		default:
 		}
 	}
-	log.Info("disocvery: AddWatch(%s) already watch(%v)", appid, ok)
+	log.Infof("disocvery: AddWatch(%s) already watch(%v)", appid, ok)
 	d.once.Do(func() {
 		go d.serverproc()
 	})
