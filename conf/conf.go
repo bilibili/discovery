@@ -2,6 +2,7 @@ package conf
 
 import (
 	"flag"
+	"os"
 
 	"github.com/Bilibili/discovery/lib/http"
 	"github.com/BurntSushi/toml"
@@ -20,6 +21,35 @@ type Config struct {
 	Zones      map[string]string // addr => name
 	HTTPServer *ServerConfig
 	HTTPClient *http.ClientConfig
+	Env        *Env
+}
+
+// Fix fix env config.
+func (c *Config) Fix() (err error) {
+	if c.Env == nil {
+		c.Env = new(Env)
+	}
+	if c.Env.Region == "" {
+		c.Env.Region = os.Getenv("REGION")
+	}
+	if c.Env.Zone == "" {
+		c.Env.Zone = os.Getenv("ZONE")
+	}
+	if c.Env.Host == "" {
+		c.Env.Host, _ = os.Hostname()
+	}
+	if c.Env.DeployEnv == "" {
+		c.Env.DeployEnv = os.Getenv("DEPLOY_ENV")
+	}
+	return
+}
+
+// Env is disocvery env.
+type Env struct {
+	Region    string
+	Zone      string
+	Host      string
+	DeployEnv string
 }
 
 // ServerConfig Http Servers conf.
@@ -33,6 +63,8 @@ func init() {
 
 // Init init conf
 func Init() (err error) {
-	_, err = toml.DecodeFile(confPath, &Conf)
-	return
+	if _, err = toml.DecodeFile(confPath, &Conf); err != nil {
+		return
+	}
+	return Conf.Fix()
 }
