@@ -8,7 +8,6 @@ import (
 
 	"github.com/Bilibili/discovery/errors"
 	"github.com/Bilibili/discovery/model"
-	"github.com/Bilibili/discovery/registry"
 	log "github.com/golang/glog"
 )
 
@@ -140,10 +139,7 @@ func (d *Discovery) nodesproc() {
 			}
 		}
 		lastTs = ins.LatestTimestamp
+		d.nodes.Update(nodes, zones, model.NodeStatusUP)
 		log.Infof("discovery changed nodes:%v zones:%v", nodes, zones)
-		d.c.Nodes = nodes
-		d.c.Zones = zones
-		d.nodes = registry.NewNodes(d.c)
-		d.nodes.UP()
 	}
 }

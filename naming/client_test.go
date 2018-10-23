@@ -36,6 +36,7 @@ func mockDiscoverySvr() {
 			Dial: xtime.Duration(1),
 		},
 	}
+	c.Fix()
 	dis, _ := discovery.New(c)
 	http.Init(c, dis)
 }

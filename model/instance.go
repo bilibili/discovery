@@ -197,11 +197,13 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 
 // UpdateLatest update LatestTimestamp.
 func (p *Apps) UpdateLatest(latestTime int64) {
+	p.lock.Lock()
 	if latestTime <= p.latestTimestamp {
 		// insure increase
 		latestTime = p.latestTimestamp + 1
 	}
 	p.latestTimestamp = latestTime
+	p.lock.Unlock()
 }
 
 // App Instances distinguished by hostname

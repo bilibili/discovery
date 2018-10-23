@@ -3,6 +3,7 @@ package registry
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 
 	"golang.org/x/sync/errgroup"
 
@@ -12,40 +13,51 @@ import (
 
 // Nodes is helper to manage lifecycle of a collection of Nodes.
 type Nodes struct {
-	nodes    []*Node
+	c        *conf.Config
+	nodes    atomic.Value
 	selfAddr string
 }
 
 // NewNodes new nodes and return.
 func NewNodes(c *conf.Config) (nodes *Nodes) {
-	ns := make([]*Node, 0, len(c.Nodes))
-	for _, addr := range c.Nodes {
-		n := newNode(c, addr)
-		n.zone = c.Zone
-		n.pRegisterURL = fmt.Sprintf("http://%s%s", c.HTTPServer.Addr, _registerURL)
-		ns = append(ns, n)
-	}
-	for addr, name := range c.Zones {
-		n := newNode(c, addr)
-		n.zone = name
-		n.otherZone = true
-		n.pRegisterURL = fmt.Sprintf("http://%s%s", c.HTTPServer.Addr, _registerURL)
-		ns = append(ns, n)
-	}
 	nodes = &Nodes{
-		nodes:    ns,
+		c:        c,
 		selfAddr: c.HTTPServer.Addr,
 	}
+	nodes.Update(c.Nodes, c.Zones, 0)
 	return
+}
+
+// Update ndoes and zones.
+func (ns *Nodes) Update(nodes []string, zones map[string]string, status model.NodeStatus) {
+	newNodes := make([]*Node, 0, len(ns.c.Nodes))
+	for _, addr := range nodes {
+		n := newNode(ns.c, addr)
+		n.zone = ns.c.Zone
+		n.pRegisterURL = fmt.Sprintf("http://%s%s", ns.c.HTTPServer.Addr, _registerURL)
+		if ns.Myself(addr) {
+			n.status = status
+		}
+		newNodes = append(newNodes, n)
+	}
+	for addr, name := range ns.c.Zones {
+		n := newNode(ns.c, addr)
+		n.zone = name
+		n.otherZone = true
+		n.pRegisterURL = fmt.Sprintf("http://%s%s", ns.c.HTTPServer.Addr, _registerURL)
+		newNodes = append(newNodes, n)
+	}
+	ns.nodes.Store(newNodes)
 }
 
 // Replicate replicate information to all nodes except for this node.
 func (ns *Nodes) Replicate(c context.Context, action model.Action, i *model.Instance, otherZone bool) (err error) {
-	if len(ns.nodes) == 0 {
+	nodes := ns.nodes.Load().([]*Node)
+	if len(nodes) == 0 {
 		return
 	}
 	eg, c := errgroup.WithContext(c)
-	for _, n := range ns.nodes {
+	for _, n := range nodes {
 		if !ns.Myself(n.addr) {
 			if otherZone && n.otherZone {
 				continue
@@ -79,8 +91,9 @@ func (ns *Nodes) action(c context.Context, eg *errgroup.Group, action model.Acti
 
 // Nodes returns nodes of local zone.
 func (ns *Nodes) Nodes() (nsi []*model.Node) {
-	nsi = make([]*model.Node, 0, len(ns.nodes))
-	for _, nd := range ns.nodes {
+	nodes := ns.nodes.Load().([]*Node)
+	nsi = make([]*model.Node, 0, len(nodes))
+	for _, nd := range nodes {
 		if nd.otherZone {
 			continue
 		}
@@ -96,8 +109,9 @@ func (ns *Nodes) Nodes() (nsi []*model.Node) {
 
 // AllNodes returns nodes contain other zone nodes.
 func (ns *Nodes) AllNodes() (nsi []*model.Node) {
-	nsi = make([]*model.Node, 0, len(ns.nodes))
-	for _, nd := range ns.nodes {
+	nodes := ns.nodes.Load().([]*Node)
+	nsi = make([]*model.Node, 0, len(nodes))
+	for _, nd := range nodes {
 		node := &model.Node{
 			Addr:   nd.addr,
 			Status: nd.status,
@@ -115,7 +129,8 @@ func (ns *Nodes) Myself(addr string) bool {
 
 // UP marks status of myself node up.
 func (ns *Nodes) UP() {
-	for _, nd := range ns.nodes {
+	nodes := ns.nodes.Load().([]*Node)
+	for _, nd := range nodes {
 		if ns.Myself(nd.addr) {
 			nd.status = model.NodeStatusUP
 		}
