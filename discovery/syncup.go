@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 	"time"
 
 	"github.com/Bilibili/discovery/errors"
@@ -51,10 +50,11 @@ func (d *Discovery) regSelf() context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	now := time.Now().UnixNano()
 	ins := &model.Instance{
-		Region: os.Getenv("REGION"),
-		Zone:   os.Getenv("ZONE"),
-		Env:    os.Getenv("DEPLOY_ENV"),
-		AppID:  model.AppID,
+		Region:   d.c.Env.Region,
+		Zone:     d.c.Env.Zone,
+		Env:      d.c.Env.DeployEnv,
+		Hostname: d.c.Env.Host,
+		AppID:    model.AppID,
 		Addrs: []string{
 			"http://" + d.c.HTTPServer.Addr,
 		},
@@ -65,7 +65,6 @@ func (d *Discovery) regSelf() context.CancelFunc {
 		RenewTimestamp:  now,
 		DirtyTimestamp:  now,
 	}
-	ins.Hostname, _ = os.Hostname()
 	d.Register(ctx, ins, now, false)
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
@@ -75,9 +74,9 @@ func (d *Discovery) regSelf() context.CancelFunc {
 			case <-ticker.C:
 				arg := &model.ArgRenew{
 					AppID:    ins.AppID,
-					Zone:     ins.Zone,
-					Env:      ins.Env,
-					Hostname: ins.Hostname,
+					Zone:     d.c.Env.Zone,
+					Env:      d.c.Env.DeployEnv,
+					Hostname: d.c.Env.Host,
 				}
 				if _, err := d.Renew(ctx, arg); err != nil && err == errors.NothingFound {
 					d.Register(ctx, ins, now, false)
@@ -85,9 +84,9 @@ func (d *Discovery) regSelf() context.CancelFunc {
 			case <-ctx.Done():
 				arg := &model.ArgCancel{
 					AppID:    model.AppID,
-					Zone:     ins.Zone,
-					Env:      ins.Env,
-					Hostname: ins.Hostname,
+					Zone:     d.c.Env.Zone,
+					Env:      d.c.Env.DeployEnv,
+					Hostname: d.c.Env.Host,
 				}
 				if err := d.Cancel(context.Background(), arg); err != nil {
 					log.Errorf("d.Cancel(%+v) error(%v)", arg, err)
@@ -106,11 +105,11 @@ func (d *Discovery) nodesproc() {
 	for {
 		arg := &model.ArgPolls{
 			AppID:           []string{model.AppID},
-			Zone:            os.Getenv("ZONE"),
-			Env:             os.Getenv("DEPLOY_ENV"),
+			Zone:            d.c.Env.Zone,
+			Env:             d.c.Env.DeployEnv,
+			Hostname:        d.c.Env.Host,
 			LatestTimestamp: []int64{lastTs},
 		}
-		arg.Hostname, _ = os.Hostname()
 		ch, _, err := d.registry.Polls(arg)
 		if err != nil && err != errors.NotModified {
 			log.Errorf("d.registry(%v) error(%v)", arg, err)

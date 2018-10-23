@@ -69,14 +69,20 @@ func defRegDiscovery() *model.Instance {
 var config = newConfig()
 
 func newConfig() *dc.Config {
-	return &dc.Config{
+	c := &dc.Config{
 		HTTPClient: &http.ClientConfig{
 			Dial:      xtime.Duration(time.Second),
 			KeepAlive: xtime.Duration(time.Second * 30),
 		},
 		HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 		Nodes:      []string{"127.0.0.1:7171", "127.0.0.1:7172"},
+		Env: &dc.Env{
+			Zone:      "sh001",
+			DeployEnv: "pre",
+			Host:      "test_server",
+		},
 	}
+	return c
 }
 func init() {
 	httpMock("GET", "http://127.0.0.1:7172/discovery/fetch/all").Reply(200).JSON(`{"code":0}`)
