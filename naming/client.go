@@ -67,7 +67,7 @@ type Discovery struct {
 	cancelFunc context.CancelFunc
 	httpClient *http.Client
 
-	node    []string
+	node    atomic.Value
 	nodeIdx uint64
 
 	mutex       sync.RWMutex
@@ -166,10 +166,13 @@ func (d *Discovery) newSelf(zones map[string][]*Instance) {
 	// diff old nodes
 	var olds int
 	for _, n := range nodes {
-		for _, o := range d.node {
-			if o == n {
-				olds++
-				break
+		node, ok := d.node.Load().([]string)
+		if ok {
+			for _, o := range node {
+				if o == n {
+					olds++
+					break
+				}
 			}
 		}
 	}
@@ -180,7 +183,7 @@ func (d *Discovery) newSelf(zones map[string][]*Instance) {
 	shuffle(len(nodes), func(i, j int) {
 		nodes[i], nodes[j] = nodes[j], nodes[i]
 	})
-	d.node = nodes
+	d.node.Store(nodes)
 }
 
 // Build disovery resovler builder.
@@ -457,10 +460,10 @@ func (d *Discovery) serverproc() {
 }
 
 func (d *Discovery) pickNode() string {
-	if len(d.node) == 0 {
+	nodes, ok := d.node.Load().([]string)
+	if !ok || len(nodes) == 0 {
 		return d.c.Nodes[rand.Intn(len(d.c.Nodes))]
 	}
-	nodes := d.node
 	return nodes[atomic.LoadUint64(&d.nodeIdx)%uint64(len(nodes))]
 }
 

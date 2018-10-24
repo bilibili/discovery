@@ -2,6 +2,7 @@ package naming
 
 import (
 	"context"
+	"flag"
 	"net/url"
 	"os"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 func TestMain(m *testing.M) {
 	os.Setenv("ZONE", "test")
 	os.Setenv("DEPLOY_ENV", "test")
+	flag.Parse()
 	go mockDiscoverySvr()
 	time.Sleep(time.Second)
 	m.Run()
@@ -56,13 +58,13 @@ func TestDiscovery(t *testing.T) {
 		}
 		_, err := dis.Register(instance)
 		So(err, ShouldBeNil)
-		dis.node = []string{"127.0.0.1:7172"}
+		dis.node.Store([]string{"127.0.0.1:7172"})
 		instance.AppID = "test2"
 		//instance.Metadata = map[string]string{"meta": "meta"}
 		_, err = dis.Register(instance)
 		So(err, ShouldNotBeNil)
 		dis.renew(context.TODO(), instance)
-		dis.node = []string{"127.0.0.1:7171"}
+		dis.node.Store([]string{"127.0.0.1:7171"})
 		dis.renew(context.TODO(), instance)
 	})
 	Convey("test discovery watch", t, func() {
