@@ -40,7 +40,7 @@ func (ns *Nodes) Update(nodes []string, zones map[string]string, status model.No
 		}
 		newNodes = append(newNodes, n)
 	}
-	for addr, name := range ns.c.Zones {
+	for addr, name := range zones {
 		n := newNode(ns.c, addr)
 		n.zone = name
 		n.otherZone = true
