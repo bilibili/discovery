@@ -2,13 +2,16 @@ package naming
 
 import (
 	"context"
+	"flag"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/Bilibili/discovery/conf"
+	"github.com/Bilibili/discovery/discovery"
 	"github.com/Bilibili/discovery/http"
 	xhttp "github.com/Bilibili/discovery/lib/http"
 	xtime "github.com/Bilibili/discovery/lib/time"
@@ -17,11 +20,15 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	os.Setenv("ZONE", "test")
+	os.Setenv("DEPLOY_ENV", "test")
+	flag.Parse()
 	go mockDiscoverySvr()
+	time.Sleep(time.Second)
 	m.Run()
 }
 func mockDiscoverySvr() {
-	http.Init(&conf.Config{
+	c := &conf.Config{
 		Zone:  "test",
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &conf.ServerConfig{
@@ -30,13 +37,15 @@ func mockDiscoverySvr() {
 		HTTPClient: &xhttp.ClientConfig{
 			Dial: xtime.Duration(1),
 		},
-	})
+	}
+	c.Fix()
+	dis, _ := discovery.New(c)
+	http.Init(c, dis)
 }
 func TestDiscovery(t *testing.T) {
-	os.Setenv("ZONE", "test")
-	os.Setenv("DEPLOY_ENV", "test")
 	conf := &Config{
 		Nodes: []string{"127.0.0.1:7171"},
+		Host:  "test",
 	}
 	dis := New(conf)
 	appid := "test1"
@@ -49,15 +58,13 @@ func TestDiscovery(t *testing.T) {
 		}
 		_, err := dis.Register(instance)
 		So(err, ShouldBeNil)
-		conf.Nodes = []string{"127.0.0.1:7172"}
-		dis.Reload(conf)
+		dis.node.Store([]string{"127.0.0.1:7172"})
 		instance.AppID = "test2"
 		//instance.Metadata = map[string]string{"meta": "meta"}
 		_, err = dis.Register(instance)
 		So(err, ShouldNotBeNil)
 		dis.renew(context.TODO(), instance)
-		conf.Nodes = []string{"127.0.0.1:7171"}
-		dis.Reload(conf)
+		dis.node.Store([]string{"127.0.0.1:7171"})
 		dis.renew(context.TODO(), instance)
 	})
 	Convey("test discovery watch", t, func() {
@@ -104,6 +111,7 @@ func addNewInstance(ins *Instance) error {
 	params.Set("color", ins.Color)
 	params.Set("version", ins.Version)
 	params.Set("status", "1")
+	params.Set("latest_timestamp", strconv.FormatInt(time.Now().UnixNano(), 10))
 	res := new(struct {
 		Code int `json:"code"`
 	})

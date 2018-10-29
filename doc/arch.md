@@ -42,3 +42,7 @@
     * zoneA将zoneB的nodeI配入本身配置文件内，当做一个特殊node，同时zoneB将zoneA的node1配入本身当做特殊node（请参考配置文件内zones）
 * 跨zone同步数据时，单向同步，zoneB的nodeI收到信息后，nodeI在nodeII,nodeIII之间只做内部广播，不会再次向zoneA的node广播
 * 如果有条件可以使用SLB，请参考[B站最佳实践](practice.md)
+
+### 自发现
+* Discovery节点上下线自发现，节点之间可以感知到状态
+* 客户端SDK可感知节点状态，进行动态添加、移除节点

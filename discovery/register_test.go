@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +43,6 @@ func newPoll() *model.ArgPolls {
 }
 func defRegisArg() *model.ArgRegister {
 	return &model.ArgRegister{
-		LatestTimestamp: time.Now().Unix(),
 		AppID:           "main.arch.test",
 		Hostname:        "test1",
 		Color:           "red",
@@ -50,25 +50,47 @@ func defRegisArg() *model.ArgRegister {
 		Env:             "pre",
 		Status:          1,
 		Metadata:        `{"test":"test","weight":"10"}`,
+		LatestTimestamp: time.Now().UnixNano(),
+	}
+}
+func defRegDiscovery() *model.Instance {
+	return &model.Instance{
+		AppID:           "infra.discovery",
+		Hostname:        "test2",
+		Color:           "red",
+		Zone:            "sh001",
+		Env:             "pre",
+		Status:          1,
+		Addrs:           []string{"http://127.0.0.1:7172"},
+		LatestTimestamp: time.Now().UnixNano(),
 	}
 }
 
 var config = newConfig()
 
 func newConfig() *dc.Config {
-	return &dc.Config{
+	c := &dc.Config{
 		HTTPClient: &http.ClientConfig{
 			Dial:      xtime.Duration(time.Second),
 			KeepAlive: xtime.Duration(time.Second * 30),
 		},
 		HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 		Nodes:      []string{"127.0.0.1:7171", "127.0.0.1:7172"},
+		Env: &dc.Env{
+			Zone:      "sh001",
+			DeployEnv: "pre",
+			Host:      "test_server",
+		},
 	}
+	return c
 }
 func init() {
-	httpMock("GET", "http://127.0.0.1:7172/discovery/fetch/all").Reply(200).JSON(`{"code":1}`)
-	httpMock("POST", "http://127.0.0.1:7172/discovery/regist").Reply(200).JSON(`{"code":0}`)
+	httpMock("GET", "http://127.0.0.1:7172/discovery/fetch/all").Reply(200).JSON(`{"code":0}`)
+	httpMock("POST", "http://127.0.0.1:7172/discovery/register").Reply(200).JSON(`{"code":0}`)
 	httpMock("POST", "http://127.0.0.1:7172/discovery/cancel").Reply(200).JSON(`{"code":0}`)
+
+	os.Setenv("ZONE", "sh001")
+	os.Setenv("DEPLOY_ENV", "pre")
 }
 
 func httpMock(method, url string) *gock.Request {
@@ -79,11 +101,12 @@ func httpMock(method, url string) *gock.Request {
 
 func TestRegister(t *testing.T) {
 	Convey("test Register", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		svr.syncUp()
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
 		ins, err := svr.Fetch(context.TODO(), fet)
 		So(err, ShouldBeNil)
 		So(len(ins.Instances), ShouldResemble, 1)
@@ -112,14 +135,15 @@ func TestRegister(t *testing.T) {
 }
 func TestDiscovery(t *testing.T) {
 	Convey("test cancel polls", t, func() {
-		svr := New(config)
+		svr, disCancel := New(config)
+		defer disCancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		reg2 := defRegisArg()
 		reg2.Hostname = "test2"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg)
-		svr.Register(context.TODO(), i2, reg2)
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication)
 		ch, new, err := svr.Polls(context.TODO(), pollArg)
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
@@ -138,14 +162,15 @@ func TestDiscovery(t *testing.T) {
 }
 func TestFetchs(t *testing.T) {
 	Convey("test fetch multi appid", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		reg2 := defRegisArg()
 		reg2.AppID = "appid2"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg)
-		svr.Register(context.TODO(), i2, reg2)
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication)
 		fetchs := newFetchArg()
 		fetchs.AppID = append(fetchs.AppID, "appid2")
 		is, err := svr.Fetchs(ctx, fetchs)
@@ -155,14 +180,15 @@ func TestFetchs(t *testing.T) {
 }
 func TestZones(t *testing.T) {
 	Convey("test multi zone discovery", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		reg2 := defRegisArg()
 		reg2.Zone = "sh002"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg)
-		svr.Register(context.TODO(), i2, reg2)
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg2.Replication)
 		ch, new, err := svr.Polls(context.TODO(), newPoll())
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
@@ -181,7 +207,7 @@ func TestZones(t *testing.T) {
 			reg3.Zone = "sh002"
 			reg3.Hostname = "test03"
 			i3 := model.NewInstance(reg3)
-			svr.Register(context.TODO(), i3, reg3)
+			svr.Register(context.TODO(), i3, reg3.LatestTimestamp, reg3.Replication)
 			ch, _, err = svr.Polls(context.TODO(), pollArg)
 			So(err, ShouldBeNil)
 			ins = <-ch
@@ -196,10 +222,11 @@ func TestZones(t *testing.T) {
 }
 func TestRenew(t *testing.T) {
 	Convey("test Renew", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
 		_, err := svr.Renew(context.TODO(), rew)
 		So(err, ShouldBeNil)
 		rew2.AppID = "main.arch.noexist"
@@ -218,10 +245,11 @@ func TestRenew(t *testing.T) {
 
 func TestCancel(t *testing.T) {
 	Convey("test cancel", t, func() {
-		svr := New(config)
+		svr, disCancel := New(config)
+		defer disCancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
 		err := svr.Cancel(context.TODO(), cancel)
 		So(err, ShouldBeNil)
 		err = svr.Cancel(context.TODO(), cancel)
@@ -233,19 +261,23 @@ func TestCancel(t *testing.T) {
 
 func TestFetchAll(t *testing.T) {
 	Convey("test fetch all", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg)
-		fs := svr.FetchAll(context.TODO())
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
+		fs := svr.FetchAll(context.TODO())[i.AppID]
 		So(len(fs), ShouldResemble, 1)
 	})
 }
 
 func TestNodes(t *testing.T) {
 	Convey("test nodes", t, func() {
-		svr := New(config)
+		svr, cancel := New(config)
+		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
+		svr.Register(context.Background(), defRegDiscovery(), time.Now().UnixNano(), false)
+		time.Sleep(time.Second)
 		ns := svr.Nodes(context.TODO())
 		So(len(ns), ShouldResemble, 2)
 	})

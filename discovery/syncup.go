@@ -3,7 +3,10 @@ package discovery
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"time"
 
+	"github.com/Bilibili/discovery/errors"
 	"github.com/Bilibili/discovery/model"
 	log "github.com/golang/glog"
 )
@@ -24,11 +27,11 @@ func (d *Discovery) syncUp() (err error) {
 			Data map[string][]*model.Instance `json:"data"`
 		}
 		if err = d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
-			log.Error("e.client.Get(%v) error(%v)", uri, err)
+			log.Errorf("d.client.Get(%v) error(%v)", uri, err)
 			continue
 		}
 		if res.Code != 0 {
-			log.Error("service syncup from(%s) failed ", uri)
+			log.Errorf("service syncup from(%s) failed ", uri)
 			continue
 		}
 		for _, is := range res.Data {
@@ -40,4 +43,103 @@ func (d *Discovery) syncUp() (err error) {
 	}
 	d.nodes.UP()
 	return
+}
+
+func (d *Discovery) regSelf() context.CancelFunc {
+	ctx, cancel := context.WithCancel(context.Background())
+	now := time.Now().UnixNano()
+	ins := &model.Instance{
+		Region:   d.c.Env.Region,
+		Zone:     d.c.Env.Zone,
+		Env:      d.c.Env.DeployEnv,
+		Hostname: d.c.Env.Host,
+		AppID:    model.AppID,
+		Addrs: []string{
+			"http://" + d.c.HTTPServer.Addr,
+		},
+		Status:          model.InstanceStatusUP,
+		RegTimestamp:    now,
+		UpTimestamp:     now,
+		LatestTimestamp: now,
+		RenewTimestamp:  now,
+		DirtyTimestamp:  now,
+	}
+	d.Register(ctx, ins, now, false)
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				arg := &model.ArgRenew{
+					AppID:    ins.AppID,
+					Zone:     d.c.Env.Zone,
+					Env:      d.c.Env.DeployEnv,
+					Hostname: d.c.Env.Host,
+				}
+				if _, err := d.Renew(ctx, arg); err != nil && err == errors.NothingFound {
+					d.Register(ctx, ins, now, false)
+				}
+			case <-ctx.Done():
+				arg := &model.ArgCancel{
+					AppID:    model.AppID,
+					Zone:     d.c.Env.Zone,
+					Env:      d.c.Env.DeployEnv,
+					Hostname: d.c.Env.Host,
+				}
+				if err := d.Cancel(context.Background(), arg); err != nil {
+					log.Errorf("d.Cancel(%+v) error(%v)", arg, err)
+				}
+				return
+			}
+		}
+	}()
+	return cancel
+}
+
+func (d *Discovery) nodesproc() {
+	var (
+		lastTs int64
+	)
+	for {
+		arg := &model.ArgPolls{
+			AppID:           []string{model.AppID},
+			Zone:            d.c.Env.Zone,
+			Env:             d.c.Env.DeployEnv,
+			Hostname:        d.c.Env.Host,
+			LatestTimestamp: []int64{lastTs},
+		}
+		ch, _, err := d.registry.Polls(arg)
+		if err != nil && err != errors.NotModified {
+			log.Errorf("d.registry(%v) error(%v)", arg, err)
+			time.Sleep(time.Second)
+			continue
+		}
+		apps := <-ch
+		ins, ok := apps[model.AppID]
+		if !ok || ins == nil {
+			return
+		}
+		var (
+			nodes []string
+			zones = make(map[string]string)
+		)
+		for _, ins := range ins.Instances {
+			for _, in := range ins {
+				for _, addr := range in.Addrs {
+					u, err := url.Parse(addr)
+					if err == nil && u.Scheme == "http" {
+						if in.Zone == arg.Zone {
+							nodes = append(nodes, u.Host)
+						} else {
+							zones[u.Host] = in.Zone
+						}
+					}
+				}
+			}
+		}
+		lastTs = ins.LatestTimestamp
+		d.nodes.Update(nodes, zones, model.NodeStatusUP)
+		log.Infof("discovery changed nodes:%v zones:%v", nodes, zones)
+	}
 }

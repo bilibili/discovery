@@ -21,8 +21,9 @@ func TestReplicate(t *testing.T) {
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
 		})
-		nodes.nodes[0].client.SetTransport(gock.DefaultTransport)
-		nodes.nodes[1].client.SetTransport(gock.DefaultTransport)
+		ns := nodes.nodes.Load().([]*Node)
+		ns[0].client.SetTransport(gock.DefaultTransport)
+		ns[1].client.SetTransport(gock.DefaultTransport)
 		httpMock("POST", "http://127.0.0.1:7172/discovery/register").Reply(200).JSON(`{"code":0}`)
 		httpMock("POST", "http://127.0.0.1:7173/discovery/register").Reply(200).JSON(`{"code":0}`)
 		err := nodes.Replicate(context.TODO(), model.Register, i, false)
@@ -62,7 +63,8 @@ func TestUp(t *testing.T) {
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
 		})
 		nodes.UP()
-		for _, nd := range nodes.nodes {
+		ns := nodes.nodes.Load().([]*Node)
+		for _, nd := range ns {
 			if nd.addr == "127.0.0.1:7171" {
 				So(nd.status, ShouldResemble, model.NodeStatusUP)
 			}

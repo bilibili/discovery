@@ -38,6 +38,7 @@ You can view the comments in `cmd/discovery/discovery-example.toml` to understan
 * [Go SDK](naming/client.go) | [Example](naming/example_test.go)
 * [Java SDK](https://github.com/flygit/discoveryJavaSDK)
 * [CPP SDK](https://github.com/brpc/brpc/blob/master/src/brpc/policy/discovery_naming_service.cpp)
+* [other languaue](doc/sdk.md)
 
 ## Intro/Arch/Practice
 

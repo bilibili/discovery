@@ -39,7 +39,7 @@ func register(c *gin.Context) {
 	if arg.DirtyTimestamp > 0 {
 		i.DirtyTimestamp = arg.DirtyTimestamp
 	}
-	dis.Register(c, i, arg)
+	dis.Register(c, i, arg.LatestTimestamp, arg.Replication)
 	result(c, nil, nil)
 }
 

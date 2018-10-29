@@ -46,6 +46,7 @@ const (
 // Instance holds information required for registration with
 // <Discovery Server> and to be discovered by other components.
 type Instance struct {
+	Region   string            `json:"region"`
 	Zone     string            `json:"zone"`
 	Env      string            `json:"env"`
 	AppID    string            `json:"appid"`
@@ -71,6 +72,7 @@ type Instance struct {
 func NewInstance(arg *ArgRegister) (i *Instance) {
 	now := time.Now().UnixNano()
 	i = &Instance{
+		Region:         arg.Region,
 		Zone:           arg.Zone,
 		Env:            arg.Env,
 		AppID:          arg.AppID,
@@ -195,11 +197,13 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 
 // UpdateLatest update LatestTimestamp.
 func (p *Apps) UpdateLatest(latestTime int64) {
+	p.lock.Lock()
 	if latestTime <= p.latestTimestamp {
 		// insure increase
 		latestTime = p.latestTimestamp + 1
 	}
 	p.latestTimestamp = latestTime
+	p.lock.Unlock()
 }
 
 // App Instances distinguished by hostname
