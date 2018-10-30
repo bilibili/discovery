@@ -116,7 +116,6 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 	case model.Register:
 		params.Set("addrs", strings.Join(i.Addrs, ","))
 		params.Set("status", strconv.FormatUint(uint64(i.Status), 10))
-		params.Set("color", i.Color)
 		params.Set("version", i.Version)
 		meta, _ := json.Marshal(i.Metadata)
 		params.Set("metadata", string(meta))

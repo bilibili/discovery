@@ -27,7 +27,8 @@ var (
 	set    = &model.ArgSet{AppID: "main.arch.test",
 		Zone: "sh001", Env: "pre",
 		Hostname: []string{"test1"},
-		Color:    []string{"set"}}
+		Status:   []uint32{1},
+	}
 	pollArg = newPoll()
 )
 
@@ -45,7 +46,6 @@ func defRegisArg() *model.ArgRegister {
 	return &model.ArgRegister{
 		AppID:           "main.arch.test",
 		Hostname:        "test1",
-		Color:           "red",
 		Zone:            "sh001",
 		Env:             "pre",
 		Status:          1,
@@ -57,7 +57,6 @@ func defRegDiscovery() *model.Instance {
 	return &model.Instance{
 		AppID:           "infra.discovery",
 		Hostname:        "test2",
-		Color:           "red",
 		Zone:            "sh001",
 		Env:             "pre",
 		Status:          1,
@@ -127,7 +126,7 @@ func TestRegister(t *testing.T) {
 			So(len(ins.Instances), ShouldResemble, 1)
 			for _, is := range ins.Instances {
 				for _, i := range is {
-					So(i.Color, ShouldEqual, "set")
+					So(i.Status, ShouldEqual, 1)
 				}
 			}
 		})

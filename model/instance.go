@@ -39,8 +39,6 @@ const (
 	Delete
 	// Status Replicate the Status action to all nodes
 	Status
-	// Color Replicate the Status action to all nodes
-	Color
 )
 
 // Instance holds information required for registration with
@@ -52,7 +50,6 @@ type Instance struct {
 	AppID    string            `json:"appid"`
 	Hostname string            `json:"hostname"`
 	Addrs    []string          `json:"addrs"`
-	Color    string            `json:"color"`
 	Version  string            `json:"version"`
 	Metadata map[string]string `json:"metadata"`
 
@@ -78,7 +75,6 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 		AppID:          arg.AppID,
 		Hostname:       arg.Hostname,
 		Addrs:          arg.Addrs,
-		Color:          arg.Color,
 		Version:        arg.Version,
 		Status:         arg.Status,
 		RegTimestamp:   now,
@@ -332,9 +328,6 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 			if dst.Status == InstanceStatusUP {
 				dst.UpTimestamp = setTime
 			}
-		}
-		if len(changes.Color) != 0 {
-			dst.Color = changes.Color[i]
 		}
 		if len(changes.Metadata) != 0 {
 			if err := json.Unmarshal([]byte(changes.Metadata[i]), &dst.Metadata); err != nil {

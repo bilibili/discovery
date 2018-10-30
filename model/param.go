@@ -9,7 +9,6 @@ type ArgRegister struct {
 	Hostname        string   `form:"hostname" validate:"required"`
 	Status          uint32   `form:"status" validate:"required"`
 	Addrs           []string `form:"addrs" validate:"gt=0"`
-	Color           string   `form:"color"`
 	Version         string   `form:"version"`
 	Metadata        string   `form:"metadata"`
 	Replication     bool     `form:"replication"`
@@ -78,7 +77,6 @@ type ArgSet struct {
 	AppID        string   `form:"appid" validate:"required"`
 	Hostname     []string `form:"hostname" validate:"gte=0"`
 	Status       []uint32 `form:"status" validate:"gte=0"`
-	Color        []string `form:"color" validate:"gte=0"`
 	Metadata     []string `form:"metadata" validate:"gte=0"`
 	Replication  bool     `form:"replication"`
 	SetTimestamp int64    `form:"set_timestamp"`

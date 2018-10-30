@@ -19,8 +19,6 @@ type Instance struct {
 	// Addrs is the address of app instance
 	// format: scheme://host
 	Addrs []string `json:"addrs"`
-	// Color distinguishs grey or common.
-	Color string `json:"color"`
 	// Version is publishing version.
 	Version string `json:"version"`
 	// LastTs is instance latest updated timestamp

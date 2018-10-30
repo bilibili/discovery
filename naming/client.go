@@ -22,6 +22,7 @@ import (
 
 const (
 	_registerURL = "http://%s/discovery/register"
+	_setURL      = "http://%s/discovery/set"
 	_cancelURL   = "http://%s/discovery/cancel"
 	_renewURL    = "http://%s/discovery/renew"
 	_pollURL     = "http://%s/discovery/polls"
@@ -339,24 +340,21 @@ func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
 	params.Set("addrs", strings.Join(ins.Addrs, ","))
-	params.Set("color", ins.Color)
 	params.Set("version", ins.Version)
 	params.Set("status", _statusUP)
 	params.Set("metadata", string(metadata))
 	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
 		d.switchNode()
-		log.Errorf("discovery: register client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) color(%s) error(%v)",
-			uri, c.Zone, c.Env, ins.AppID, ins.Addrs, ins.Color, err)
+		log.Errorf("discovery: register client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) error(%v)",
+			uri, c.Zone, c.Env, ins.AppID, ins.Addrs, err)
 		return
 	}
 	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
-		log.Warningf("discovery: register client.Get(%v)  env(%s) appid(%s) addrs(%v) color(%s)  code(%v)",
-			uri, c.Env, ins.AppID, ins.Addrs, ins.Color, res.Code)
+		log.Warningf("discovery: register client.Get(%v)  env(%s) appid(%s) addrs(%v) code(%v)", uri, c.Env, ins.AppID, ins.Addrs, res.Code)
 		err = ec
 		return
 	}
-	log.Infof("discovery: register client.Get(%v) env(%s) appid(%s) addrs(%s) color(%s) success",
-		uri, c.Env, ins.AppID, ins.Addrs, ins.Color)
+	log.Infof("discovery: register client.Get(%v) env(%s) appid(%s) addrs(%s) success", uri, c.Env, ins.AppID, ins.Addrs)
 	return
 }
 
@@ -419,6 +417,48 @@ func (d *Discovery) cancel(ins *Instance) (err error) {
 	}
 	log.Infof("discovery cancel client.Get(%v)  env(%s) appid(%s) hostname(%s) success",
 		uri, c.Env, ins.AppID, c.Host)
+	return
+}
+
+// Set set ins status and metadata.
+func (d *Discovery) Set(ins *Instance) error {
+	return d.set(context.Background(), ins)
+}
+
+// rset set  instance info with discovery
+func (d *Discovery) set(ctx context.Context, ins *Instance) (err error) {
+	d.mutex.RLock()
+	conf := d.c
+	d.mutex.RUnlock()
+	res := new(struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	})
+	uri := fmt.Sprintf(_setURL, d.pickNode())
+	params := d.newParams(conf)
+	params.Set("appid", ins.AppID)
+	params.Set("version", ins.Version)
+	params.Set("status", _statusUP)
+	if ins.Metadata != nil {
+		var metadata []byte
+		if metadata, err = json.Marshal(ins.Metadata); err != nil {
+			log.Errorf("discovery:set instance Marshal metadata(%v) failed!error(%v)", ins.Metadata, err)
+		}
+		params.Set("metadata", string(metadata))
+	}
+	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
+		d.switchNode()
+		log.Errorf("discovery: set client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) error(%v)",
+			uri, conf.Zone, conf.Env, ins.AppID, ins.Addrs, err)
+		return
+	}
+	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
+		log.Warningf("discovery: set client.Get(%v)  env(%s) appid(%s) addrs(%v)  code(%v)",
+			uri, conf.Env, ins.AppID, ins.Addrs, res.Code)
+		err = ec
+		return
+	}
+	log.Infof("discovery: set client.Get(%v) env(%s) appid(%s) addrs(%s) success", uri+"?"+params.Encode(), conf.Env, ins.AppID, ins.Addrs)
 	return
 }
 

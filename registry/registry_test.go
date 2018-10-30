@@ -12,10 +12,10 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var reg = &model.ArgRegister{AppID: "main.arch.test", Hostname: "reg", Color: "red", Zone: "sh0001", Env: "pre", Status: 1}
-var regH1 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "regH1", Color: "red", Zone: "sh0001", Env: "pre", Status: 1}
+var reg = &model.ArgRegister{AppID: "main.arch.test", Hostname: "reg", Zone: "sh0001", Env: "pre", Status: 1}
+var regH1 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "regH1", Zone: "sh0001", Env: "pre", Status: 1}
 
-var reg2 = &model.ArgRegister{AppID: "main.arch.test2", Hostname: "reg2", Color: "red", Zone: "sh0001", Env: "pre", Status: 1}
+var reg2 = &model.ArgRegister{AppID: "main.arch.test2", Hostname: "reg2", Zone: "sh0001", Env: "pre", Status: 1}
 
 var arg = &model.ArgRenew{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Hostname: "reg"}
 var cancel = &model.ArgCancel{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Hostname: "reg"}
@@ -259,7 +259,7 @@ func TestBroadcast(t *testing.T) {
 		go func() {
 			Convey("must poll ahead of time", t, func() {
 				time.Sleep(time.Microsecond * 5)
-				var arg2 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "go", Color: "red", Zone: "sh0001", Env: "pre", Status: 1}
+				var arg2 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "go", Zone: "sh0001", Env: "pre", Status: 1}
 				m2 := model.NewInstance(arg2)
 				err2 := r.Register(m2, 0)
 				So(err2, ShouldBeNil)
@@ -286,7 +286,7 @@ func BenchmarkBroadcast(b *testing.B) {
 		r, _ := benchRegister(b)
 		go func() {
 			time.Sleep(time.Millisecond * 1)
-			var arg2 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "go", Color: "red", Zone: "sh0001", Env: "pre", Status: 1}
+			var arg2 = &model.ArgRegister{AppID: "main.arch.test", Hostname: "go", Zone: "sh0001", Env: "pre", Status: 1}
 			m2 := model.NewInstance(arg2)
 			if err2 = r.Register(m2, 0); err2 != nil {
 				b.Errorf("Reigster(%v) error(%v)", m2.AppID, err2)
@@ -325,15 +325,6 @@ func TestSet(t *testing.T) {
 	})
 	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 	changes.Hostname = []string{"reg"}
-	changes.Color = []string{"blue"}
-	Convey("test set color to blue", t, func() {
-		ok := r.Set(changes)
-		So(ok, ShouldBeTrue)
-		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
-		c, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
-		So(err, ShouldBeNil)
-		So(c.Instances["sh0001"][0].Color, ShouldResemble, "blue")
-	})
 	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 	changes.Hostname = []string{"reg"}
 	changes.Metadata = []string{`{"weight":"11"}`}
@@ -350,7 +341,6 @@ func TestSet(t *testing.T) {
 	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 	changes.Hostname = []string{"reg", "regH1"}
 	changes.Metadata = []string{`{"weight":"12"}`, `{"weight":"13"}`}
-	changes.Color = []string{"yellow", "yellow"}
 	Convey("test set multi instance's color to blue and metadata weight to 12", t, func() {
 		ok := r.Set(changes)
 		So(ok, ShouldBeTrue)
@@ -360,10 +350,8 @@ func TestSet(t *testing.T) {
 		for _, ins := range c.Instances["sh0001"] {
 			if ins.Hostname == "reg" {
 				So(ins.Metadata["weight"], ShouldResemble, "12")
-				So(ins.Color, ShouldResemble, "yellow")
 			} else if ins.Hostname == "regH1" {
 				So(ins.Metadata["weight"], ShouldResemble, "13")
-				So(ins.Color, ShouldResemble, "yellow")
 			}
 		}
 	})
@@ -406,7 +394,7 @@ func TestResetExp(t *testing.T) {
 }
 
 func benchCompareInstance(b *testing.B, src *model.Instance, i *model.Instance) {
-	if src.AppID != i.AppID || src.Color != i.Color || src.Env != i.Env || src.Hostname != i.Hostname {
+	if src.AppID != i.AppID || src.Env != i.Env || src.Hostname != i.Hostname {
 		b.Errorf("instance compare error")
 	}
 }

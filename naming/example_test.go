@@ -21,7 +21,6 @@ func ExampleDiscovery_Register() {
 		AppID: "provider",
 		// Hostname:"", // NOTE: hostname 不需要，会优先使用discovery new时Config配置的值，如没有则从os.Hostname方法获取！！！
 		Addrs:    []string{"http://172.0.0.1:8888", "grpc://172.0.0.1:9999"},
-		Color:    "red",
 		LastTs:   time.Now().Unix(),
 		Metadata: map[string]string{"weight": "10"},
 	}

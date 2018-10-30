@@ -152,8 +152,7 @@ func set(c *gin.Context) {
 		return
 	}
 	// len of color,status,metadata must equal to len of hostname or be zero
-	if (len(arg.Hostname) != len(arg.Color) && len(arg.Color) != 0) ||
-		(len(arg.Hostname) != len(arg.Status) && len(arg.Status) != 0) ||
+	if (len(arg.Hostname) != len(arg.Status) && len(arg.Status) != 0) ||
 		(len(arg.Hostname) != len(arg.Metadata) && len(arg.Metadata) != 0) {
 		result(c, nil, errors.ParamsErr)
 		return

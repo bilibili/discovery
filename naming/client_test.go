@@ -66,6 +66,29 @@ func TestDiscovery(t *testing.T) {
 		dis.renew(context.TODO(), instance)
 		dis.node.Store([]string{"127.0.0.1:7171"})
 		dis.renew(context.TODO(), instance)
+		Convey("test discovery set", func() {
+			rs := dis.Build(appid)
+			inSet := &Instance{
+				Zone:     "test",
+				Env:      "test",
+				AppID:    appid,
+				Hostname: "test-host",
+				Addrs: []string{
+					"grpc://127.0.0.1:8080",
+				},
+				Metadata: map[string]string{
+					"test":   "1",
+					"weight": "111",
+					"color":  "blue",
+				},
+			}
+			err = dis.Set(inSet)
+			So(err, ShouldBeNil)
+			ch := rs.Watch()
+			<-ch
+			ins, _ := rs.Fetch()
+			So(ins["test"][0].Metadata["weight"], ShouldResemble, "111")
+		})
 	})
 	Convey("test discovery watch", t, func() {
 		rsl := dis.Build(appid)
@@ -95,6 +118,7 @@ func TestDiscovery(t *testing.T) {
 		So(dis.Scheme(), ShouldEqual, "discovery")
 		dis.Close()
 	})
+
 }
 
 func addNewInstance(ins *Instance) error {
@@ -108,7 +132,6 @@ func addNewInstance(ins *Instance) error {
 	params.Set("hostname", ins.Hostname)
 	params.Set("appid", ins.AppID)
 	params.Set("addrs", strings.Join(ins.Addrs, ","))
-	params.Set("color", ins.Color)
 	params.Set("version", ins.Version)
 	params.Set("status", "1")
 	params.Set("latest_timestamp", strconv.FormatInt(time.Now().UnixNano(), 10))
