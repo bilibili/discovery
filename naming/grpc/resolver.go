@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/Bilibili/discovery/naming"
 	log "github.com/golang/glog"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -42,10 +42,10 @@ type Builder struct {
 
 // Build returns itself for Resolver, because it's both a builder and a resolver.
 func (b *Builder) Build(target resolver.Target, cc resolver.ClientConn, opts resolver.BuildOption) (resolver.Resolver, error) {
-	// discovery://default/service.name?zone=sh001&cluster=c1,c2,c3
+	// discovery://default/service.name?zone=sh001&cluster=c1&cluster=c2&cluster=c3
 	dsn := strings.SplitN(target.Endpoint, "?", 2)
 	if len(dsn) == 0 {
-		return nil, errors.Errorf("grpc resolver: parse target.Endpoint(%s) failed! the endpoint is empty", target.Endpoint)
+		return nil, fmt.Errorf("grpc resolver: parse target.Endpoint(%s) failed! the endpoint is empty", target.Endpoint)
 	}
 	// parse params info
 	zone := os.Getenv("ZONE")
