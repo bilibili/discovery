@@ -141,6 +141,12 @@
 			"revisionTime": "2018-05-25T13:55:20Z"
 		},
 		{
+			"checksumSHA1": "GEq6wwE1qWLmkaM02SjxBmmnHDo=",
+			"path": "google.golang.org/grpc/resolver",
+			"revision": "a88340f3c8991b7a7b6ea74c1986123a4c793322",
+			"revisionTime": "2018-10-30T23:29:06Z"
+		},
+		{
 			"checksumSHA1": "P/k5ZGf0lEBgpKgkwy++F7K1PSg=",
 			"path": "gopkg.in/go-playground/validator.v8",
 			"revision": "5f1438d3fca68893a817e4a66806cea46a9e4ebf",
