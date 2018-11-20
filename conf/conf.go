@@ -41,6 +41,12 @@ func (c *Config) Fix() (err error) {
 	if c.Env.DeployEnv == "" {
 		c.Env.DeployEnv = os.Getenv("DEPLOY_ENV")
 	}
+	// FIXME use env instead of zone
+	if c.Zone != "" {
+		c.Env.Zone = c.Zone
+	} else {
+		c.Zone = c.Env.Zone
+	}
 	return
 }
 
