@@ -1,8 +1,11 @@
 language: go
 
+env:
+  - GO111MODULE=on
+
 go:
-  - 1.9.x
   - 1.10.x
+  - 1.11.x
 
 go_import_path: github.com/Bilibili/discovery
 
@@ -11,6 +14,8 @@ install:
   - gometalinter --install
 
 script:
+  - cd cmd/discovery
+  - go build
   - gometalinter --vendor --disable-all --enable=gosimple --enable=golint --enable=vet --enable=ineffassign --enable=unconvert \
     --exclude="by other packages, and that stutters; consider calling this" \
     --skip=proto \
@@ -18,8 +23,6 @@ script:
     --skip=.git \
     --tests ./... 
   - ./codecov.sh
-  - cd cmd/discovery
-  - go build
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
