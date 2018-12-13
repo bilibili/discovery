@@ -10,9 +10,9 @@ import (
 
 // Register a new instance.
 func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimestamp int64, replication bool) {
-	d.registry.Register(ins, latestTimestamp)
+	_ = d.registry.Register(ins, latestTimestamp)
 	if replication {
-		d.nodes.Replicate(c, model.Register, ins, ins.Zone != d.c.Zone)
+		_ = d.nodes.Replicate(c, model.Register, ins, ins.Zone != d.c.Zone)
 	}
 }
 
@@ -25,12 +25,11 @@ func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Inst
 		return
 	}
 	if !arg.Replication {
-		d.nodes.Replicate(c, model.Renew, i, arg.Zone != d.c.Zone)
+		_ = d.nodes.Replicate(c, model.Renew, i, arg.Zone != d.c.Zone)
 		return
 	}
 	if arg.DirtyTimestamp > i.DirtyTimestamp {
 		err = errors.NothingFound
-		return
 	} else if arg.DirtyTimestamp < i.DirtyTimestamp {
 		err = errors.Conflict
 	}
@@ -46,7 +45,7 @@ func (d *Discovery) Cancel(c context.Context, arg *model.ArgCancel) (err error) 
 		return
 	}
 	if !arg.Replication {
-		d.nodes.Replicate(c, model.Cancel, i, arg.Zone != d.c.Zone)
+		_ = d.nodes.Replicate(c, model.Cancel, i, arg.Zone != d.c.Zone)
 	}
 	return
 }

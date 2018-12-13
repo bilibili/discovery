@@ -38,7 +38,7 @@ type consumer struct {
 }
 
 // This Example show how get watch a server provier and get provider instances.
-func ExampleDiscovery_Watch() {
+func ExampleResolver_Watch() {
 	conf := &naming.Config{
 		Nodes: []string{"127.0.0.1:7171"},
 		Zone:  "sh1",

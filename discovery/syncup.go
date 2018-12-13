@@ -16,7 +16,7 @@ var (
 )
 
 // syncUp populates the registry information from a peer eureka node.
-func (d *Discovery) syncUp() (err error) {
+func (d *Discovery) syncUp() {
 	for _, node := range d.nodes.AllNodes() {
 		if d.nodes.Myself(node.Addr) {
 			continue
@@ -26,7 +26,7 @@ func (d *Discovery) syncUp() (err error) {
 			Code int                          `json:"code"`
 			Data map[string][]*model.Instance `json:"data"`
 		}
-		if err = d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
+		if err := d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
 			log.Errorf("d.client.Get(%v) error(%v)", uri, err)
 			continue
 		}
@@ -36,13 +36,12 @@ func (d *Discovery) syncUp() (err error) {
 		}
 		for _, is := range res.Data {
 			for _, i := range is {
-				d.registry.Register(i, i.LatestTimestamp)
+				_ = d.registry.Register(i, i.LatestTimestamp)
 			}
 		}
 		// NOTE: no return, make sure that all instances from other nodes register into self.
 	}
 	d.nodes.UP()
-	return
 }
 
 func (d *Discovery) regSelf() context.CancelFunc {

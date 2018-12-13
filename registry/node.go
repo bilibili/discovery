@@ -138,7 +138,7 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 	if res.Code != 0 {
 		log.Errorf("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
 		if err = errors.Int(res.Code); err == errors.Conflict {
-			json.Unmarshal([]byte(res.Data), data)
+			_ = json.Unmarshal([]byte(res.Data), data)
 		}
 	}
 	return

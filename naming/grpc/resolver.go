@@ -1,7 +1,6 @@
 package resolver
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -74,10 +73,9 @@ func (b *Builder) Build(target resolver.Target, cc resolver.ClientConn, opts res
 // Resolver watches for the updates on the specified target.
 // Updates include address updates and service config updates.
 type Resolver struct {
-	nr     naming.Resolver
-	cc     resolver.ClientConn
-	quit   chan struct{}
-	cancel context.CancelFunc
+	nr   naming.Resolver
+	cc   resolver.ClientConn
+	quit chan struct{}
 
 	zone     string
 	clusters map[string]struct{}

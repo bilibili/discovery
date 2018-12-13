@@ -26,14 +26,10 @@ const (
 	_cancelURL   = "http://%s/discovery/cancel"
 	_renewURL    = "http://%s/discovery/renew"
 	_pollURL     = "http://%s/discovery/polls"
-	_nodesURL    = "http://%s/discovery/nodes"
 
 	_registerGap = 30 * time.Second
 
 	_statusUP = "1"
-
-	_errCodeOK = 0
-	_errCodeNF = -404
 
 	_appid = "infra.discovery"
 )
@@ -308,10 +304,10 @@ func (d *Discovery) Register(ins *Instance) (cancelFunc context.CancelFunc, err 
 			select {
 			case <-ticker.C:
 				if err := d.renew(ctx, ins); err != nil && ecode.NothingFound.Equal(err) {
-					d.register(ctx, ins)
+					_ = d.register(ctx, ins)
 				}
 			case <-ctx.Done():
-				d.cancel(ins)
+				_ = d.cancel(ins)
 				ch <- struct{}{}
 				return
 			}
@@ -510,34 +506,6 @@ func (d *Discovery) pickNode() string {
 
 func (d *Discovery) switchNode() {
 	atomic.AddUint64(&d.nodeIdx, 1)
-}
-
-func (d *Discovery) nodes() (nodes []string) {
-	res := new(struct {
-		Code int `json:"code"`
-		Data []struct {
-			Addr string `json:"addr"`
-		} `json:"data"`
-	})
-	uri := fmt.Sprintf(_nodesURL, d.pickNode())
-	if err := d.httpClient.Get(d.ctx, uri, "", nil, res); err != nil {
-		d.switchNode()
-		log.Errorf("discovery: consumer client.Get(%v)error(%+v)", uri, err)
-		return
-	}
-	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
-		log.Errorf("discovery: consumer client.Get(%v) error(%v)", uri, res.Code)
-		return
-	}
-	if len(res.Data) == 0 {
-		log.Warningf("discovery: get nodes(%s) failed,no nodes found!", uri)
-		return
-	}
-	nodes = make([]string, 0, len(res.Data))
-	for i := range res.Data {
-		nodes = append(nodes, res.Data[i].Addr)
-	}
-	return
 }
 
 func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err error) {

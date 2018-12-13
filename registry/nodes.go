@@ -73,17 +73,17 @@ func (ns *Nodes) action(c context.Context, eg *errgroup.Group, action model.Acti
 	switch action {
 	case model.Register:
 		eg.Go(func() error {
-			n.Register(c, i)
+			_ = n.Register(c, i)
 			return nil
 		})
 	case model.Renew:
 		eg.Go(func() error {
-			n.Renew(c, i)
+			_ = n.Renew(c, i)
 			return nil
 		})
 	case model.Cancel:
 		eg.Go(func() error {
-			n.Cancel(c, i)
+			_ = n.Cancel(c, i)
 			return nil
 		})
 	}

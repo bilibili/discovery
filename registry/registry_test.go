@@ -226,7 +226,7 @@ func TestPollsChan(t *testing.T) {
 		// re register when 1s later, make sure latest_timestamp changed
 		time.Sleep(time.Second)
 		h1 := model.NewInstance(regH1)
-		r.Register(h1, 0)
+		_ = r.Register(h1, 0)
 		// wait
 		wg.Wait()
 	})
@@ -337,7 +337,7 @@ func TestSet(t *testing.T) {
 		So(c.Instances["sh0001"][0].Metadata["weight"], ShouldResemble, "11")
 	})
 	i1 := model.NewInstance(regH1)
-	r.Register(i1, 0)
+	_ = r.Register(i1, 0)
 	changes = &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 	changes.Hostname = []string{"reg", "regH1"}
 	changes.Metadata = []string{`{"weight":"12"}`, `{"weight":"13"}`}
@@ -456,7 +456,7 @@ func TestEvict2(t *testing.T) {
 		So(ok, ShouldBeTrue)
 		// promise the renewtime of instance is expire
 		m.RenewTimestamp -= int64(time.Second * 100)
-		r.Register(m, 0)
+		_ = r.Register(m, 0)
 		// move up the statistics of heartbeat for evict
 		r.gd.facLastMin = r.gd.facInMin
 		r.evict()

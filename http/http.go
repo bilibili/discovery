@@ -29,7 +29,11 @@ func Init(c *conf.Config, d *discovery.Discovery) {
 	engine := gin.New()
 	engine.Use(loggerHandler, recoverHandler)
 	innerRouter(engine)
-	go engine.Run(c.HTTPServer.Addr)
+	go func() {
+		if err := engine.Run(c.HTTPServer.Addr); err != nil {
+			panic(err)
+		}
+	}()
 }
 
 // innerRouter init local router api path.

@@ -25,7 +25,7 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	go mockDiscoverySvr()
 	time.Sleep(time.Second)
-	m.Run()
+	os.Exit(m.Run())
 }
 func mockDiscoverySvr() {
 	c := &conf.Config{
@@ -38,7 +38,7 @@ func mockDiscoverySvr() {
 			Dial: xtime.Duration(1),
 		},
 	}
-	c.Fix()
+	_ = c.Fix()
 	dis, _ := discovery.New(c)
 	http.Init(c, dis)
 }
@@ -63,9 +63,9 @@ func TestDiscovery(t *testing.T) {
 		//instance.Metadata = map[string]string{"meta": "meta"}
 		_, err = dis.Register(instance)
 		So(err, ShouldNotBeNil)
-		dis.renew(context.TODO(), instance)
+		_ = dis.renew(context.TODO(), instance)
 		dis.node.Store([]string{"127.0.0.1:7171"})
-		dis.renew(context.TODO(), instance)
+		_ = dis.renew(context.TODO(), instance)
 		Convey("test discovery set", func() {
 			rs := dis.Build(appid)
 			inSet := &Instance{
