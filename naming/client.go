@@ -425,7 +425,7 @@ func (d *Discovery) Set(ins *Instance) error {
 	return d.set(context.Background(), ins)
 }
 
-// rset set  instance info with discovery
+// set set instance info with discovery
 func (d *Discovery) set(ctx context.Context, ins *Instance) (err error) {
 	d.mutex.RLock()
 	conf := d.c
@@ -443,6 +443,7 @@ func (d *Discovery) set(ctx context.Context, ins *Instance) (err error) {
 		var metadata []byte
 		if metadata, err = json.Marshal(ins.Metadata); err != nil {
 			log.Errorf("discovery:set instance Marshal metadata(%v) failed!error(%v)", ins.Metadata, err)
+			return
 		}
 		params.Set("metadata", string(metadata))
 	}

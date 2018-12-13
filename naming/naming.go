@@ -9,7 +9,6 @@ const (
 	MetaWeight  = "weight"
 	MetaCluster = "cluster"
 	MetaZone    = "zone"
-	MetaColor   = "color"
 )
 
 // Instance represents a server the client connects to.
