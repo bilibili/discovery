@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
 	"time"
 
 	"github.com/Bilibili/discovery/errors"
@@ -109,7 +108,7 @@ func poll(c *gin.Context) {
 		return
 	case <-time.After(_pollWaitSecond):
 		result(c, nil, errors.NotModified)
-	case <-c.Writer.(http.CloseNotifier).CloseNotify():
+	case <-c.Done():
 	}
 	result(c, nil, errors.NotModified)
 	dis.DelConns(arg)
@@ -139,7 +138,7 @@ func polls(c *gin.Context) {
 		}
 		return
 	case <-time.After(_pollWaitSecond):
-	case <-c.Writer.(http.CloseNotifier).CloseNotify():
+	case <-c.Done():
 	}
 	result(c, nil, errors.NotModified)
 	dis.DelConns(arg)
