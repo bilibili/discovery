@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"sync/atomic"
 
 	"github.com/Bilibili/discovery/conf"
 	"github.com/Bilibili/discovery/lib/http"
@@ -13,7 +14,7 @@ type Discovery struct {
 	c        *conf.Config
 	client   *http.Client
 	registry *registry.Registry
-	nodes    *registry.Nodes
+	nodes    atomic.Value
 }
 
 // New get a discovery.
@@ -22,8 +23,8 @@ func New(c *conf.Config) (d *Discovery, cancel context.CancelFunc) {
 		c:        c,
 		client:   http.NewClient(c.HTTPClient),
 		registry: registry.NewRegistry(),
-		nodes:    registry.NewNodes(c),
 	}
+	d.nodes.Store(registry.NewNodes(c))
 	d.syncUp()
 	cancel = d.regSelf()
 	go d.nodesproc()

@@ -27,25 +27,35 @@ func TestMain(m *testing.M) {
 	time.Sleep(time.Second)
 	os.Exit(m.Run())
 }
+
 func mockDiscoverySvr() {
 	c := &conf.Config{
-		Zone:  "test",
+		Env: &conf.Env{
+			Zone:      "test",
+			DeployEnv: "test",
+			Host:      "test",
+		},
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &conf.ServerConfig{
 			Addr: "127.0.0.1:7171",
 		},
 		HTTPClient: &xhttp.ClientConfig{
-			Dial: xtime.Duration(1),
+			Dial:      xtime.Duration(time.Second),
+			KeepAlive: xtime.Duration(time.Second * 30),
 		},
 	}
 	_ = c.Fix()
 	dis, _ := discovery.New(c)
 	http.Init(c, dis)
 }
+
 func TestDiscovery(t *testing.T) {
 	conf := &Config{
-		Nodes: []string{"127.0.0.1:7171"},
-		Host:  "test",
+		Nodes:  []string{"127.0.0.1:7171"},
+		Region: "test",
+		Zone:   "test",
+		Env:    "test",
+		Host:   "test",
 	}
 	dis := New(conf)
 	appid := "test1"
