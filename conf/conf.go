@@ -9,16 +9,31 @@ import (
 )
 
 var (
-	confPath string
+	confPath  string
+	region    string
+	zone      string
+	deployEnv string
+	hostname  string
 	// Conf conf
 	Conf = &Config{}
 )
 
-// Config config
+func init() {
+	var err error
+	if hostname, err = os.Hostname(); err != nil || hostname == "" {
+		hostname = os.Getenv("HOSTNAME")
+	}
+	flag.StringVar(&confPath, "conf", "discovery-example.toml", "config path")
+	flag.StringVar(&region, "region", os.Getenv("REGION"), "avaliable region. or use REGION env variable, value: sh etc.")
+	flag.StringVar(&zone, "zone", os.Getenv("ZONE"), "avaliable zone. or use ZONE env variable, value: sh001/sh002 etc.")
+	flag.StringVar(&deployEnv, "deploy.env", os.Getenv("DEPLOY_ENV"), "deploy env. or use DEPLOY_ENV env variable, value: dev/fat1/uat/pre/prod etc.")
+	flag.StringVar(&hostname, "hostname", hostname, "machine hostname")
+}
+
+// Config config.
 type Config struct {
-	Zone       string
 	Nodes      []string
-	Zones      map[string]string // addr => name
+	Zones      map[string][]string
 	HTTPServer *ServerConfig
 	HTTPClient *http.ClientConfig
 	Env        *Env
@@ -30,16 +45,16 @@ func (c *Config) Fix() (err error) {
 		c.Env = new(Env)
 	}
 	if c.Env.Region == "" {
-		c.Env.Region = os.Getenv("REGION")
+		c.Env.Region = region
 	}
 	if c.Env.Zone == "" {
-		c.Env.Zone = os.Getenv("ZONE")
+		c.Env.Zone = zone
 	}
 	if c.Env.Host == "" {
-		c.Env.Host, _ = os.Hostname()
+		c.Env.Host = hostname
 	}
 	if c.Env.DeployEnv == "" {
-		c.Env.DeployEnv = os.Getenv("DEPLOY_ENV")
+		c.Env.DeployEnv = deployEnv
 	}
 	return
 }
@@ -55,10 +70,6 @@ type Env struct {
 // ServerConfig Http Servers conf.
 type ServerConfig struct {
 	Addr string
-}
-
-func init() {
-	flag.StringVar(&confPath, "conf", "discovery-example.toml", "config path")
 }
 
 // Init init conf

@@ -22,17 +22,14 @@ import (
 
 const (
 	_registerURL = "http://%s/discovery/register"
+	_setURL      = "http://%s/discovery/set"
 	_cancelURL   = "http://%s/discovery/cancel"
 	_renewURL    = "http://%s/discovery/renew"
 	_pollURL     = "http://%s/discovery/polls"
-	_nodesURL    = "http://%s/discovery/nodes"
 
 	_registerGap = 30 * time.Second
 
 	_statusUP = "1"
-
-	_errCodeOK = 0
-	_errCodeNF = -404
 
 	_appid = "infra.discovery"
 )
@@ -166,8 +163,7 @@ func (d *Discovery) newSelf(zones map[string][]*Instance) {
 	// diff old nodes
 	var olds int
 	for _, n := range nodes {
-		node, ok := d.node.Load().([]string)
-		if ok {
+		if node, ok := d.node.Load().([]string); ok {
 			for _, o := range node {
 				if o == n {
 					olds++
@@ -307,10 +303,10 @@ func (d *Discovery) Register(ins *Instance) (cancelFunc context.CancelFunc, err 
 			select {
 			case <-ticker.C:
 				if err := d.renew(ctx, ins); err != nil && ecode.NothingFound.Equal(err) {
-					d.register(ctx, ins)
+					_ = d.register(ctx, ins)
 				}
 			case <-ctx.Done():
-				d.cancel(ins)
+				_ = d.cancel(ins)
 				ch <- struct{}{}
 				return
 			}
@@ -339,24 +335,21 @@ func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
 	params.Set("addrs", strings.Join(ins.Addrs, ","))
-	params.Set("color", ins.Color)
 	params.Set("version", ins.Version)
 	params.Set("status", _statusUP)
 	params.Set("metadata", string(metadata))
 	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
 		d.switchNode()
-		log.Errorf("discovery: register client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) color(%s) error(%v)",
-			uri, c.Zone, c.Env, ins.AppID, ins.Addrs, ins.Color, err)
+		log.Errorf("discovery: register client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) error(%v)",
+			uri, c.Zone, c.Env, ins.AppID, ins.Addrs, err)
 		return
 	}
 	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
-		log.Warningf("discovery: register client.Get(%v)  env(%s) appid(%s) addrs(%v) color(%s)  code(%v)",
-			uri, c.Env, ins.AppID, ins.Addrs, ins.Color, res.Code)
+		log.Warningf("discovery: register client.Get(%v)  env(%s) appid(%s) addrs(%v) code(%v)", uri, c.Env, ins.AppID, ins.Addrs, res.Code)
 		err = ec
 		return
 	}
-	log.Infof("discovery: register client.Get(%v) env(%s) appid(%s) addrs(%s) color(%s) success",
-		uri, c.Env, ins.AppID, ins.Addrs, ins.Color)
+	log.Infof("discovery: register client.Get(%v) env(%s) appid(%s) addrs(%s) success", uri, c.Env, ins.AppID, ins.Addrs)
 	return
 }
 
@@ -422,6 +415,49 @@ func (d *Discovery) cancel(ins *Instance) (err error) {
 	return
 }
 
+// Set set ins status and metadata.
+func (d *Discovery) Set(ins *Instance) error {
+	return d.set(context.Background(), ins)
+}
+
+// set set instance info with discovery
+func (d *Discovery) set(ctx context.Context, ins *Instance) (err error) {
+	d.mutex.RLock()
+	conf := d.c
+	d.mutex.RUnlock()
+	res := new(struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	})
+	uri := fmt.Sprintf(_setURL, d.pickNode())
+	params := d.newParams(conf)
+	params.Set("appid", ins.AppID)
+	params.Set("version", ins.Version)
+	params.Set("status", _statusUP)
+	if ins.Metadata != nil {
+		var metadata []byte
+		if metadata, err = json.Marshal(ins.Metadata); err != nil {
+			log.Errorf("discovery:set instance Marshal metadata(%v) failed!error(%v)", ins.Metadata, err)
+			return
+		}
+		params.Set("metadata", string(metadata))
+	}
+	if err = d.httpClient.Post(ctx, uri, "", params, &res); err != nil {
+		d.switchNode()
+		log.Errorf("discovery: set client.Get(%v)  zone(%s) env(%s) appid(%s) addrs(%v) error(%v)",
+			uri, conf.Zone, conf.Env, ins.AppID, ins.Addrs, err)
+		return
+	}
+	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
+		log.Warningf("discovery: set client.Get(%v)  env(%s) appid(%s) addrs(%v)  code(%v)",
+			uri, conf.Env, ins.AppID, ins.Addrs, res.Code)
+		err = ec
+		return
+	}
+	log.Infof("discovery: set client.Get(%v) env(%s) appid(%s) addrs(%s) success", uri+"?"+params.Encode(), conf.Env, ins.AppID, ins.Addrs)
+	return
+}
+
 func (d *Discovery) serverproc() {
 	var (
 		retry  int
@@ -469,34 +505,6 @@ func (d *Discovery) pickNode() string {
 
 func (d *Discovery) switchNode() {
 	atomic.AddUint64(&d.nodeIdx, 1)
-}
-
-func (d *Discovery) nodes() (nodes []string) {
-	res := new(struct {
-		Code int `json:"code"`
-		Data []struct {
-			Addr string `json:"addr"`
-		} `json:"data"`
-	})
-	uri := fmt.Sprintf(_nodesURL, d.pickNode())
-	if err := d.httpClient.Get(d.ctx, uri, "", nil, res); err != nil {
-		d.switchNode()
-		log.Errorf("discovery: consumer client.Get(%v)error(%+v)", uri, err)
-		return
-	}
-	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
-		log.Errorf("discovery: consumer client.Get(%v) error(%v)", uri, res.Code)
-		return
-	}
-	if len(res.Data) == 0 {
-		log.Warningf("discovery: get nodes(%s) failed,no nodes found!", uri)
-		return
-	}
-	nodes = make([]string, 0, len(res.Data))
-	for i := range res.Data {
-		nodes = append(nodes, res.Data[i].Addr)
-	}
-	return
 }
 
 func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err error) {

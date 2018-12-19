@@ -6,8 +6,10 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/Bilibili/discovery/conf"
 	"github.com/Bilibili/discovery/errors"
 	"github.com/Bilibili/discovery/model"
+	"github.com/Bilibili/discovery/registry"
 	log "github.com/golang/glog"
 )
 
@@ -16,9 +18,10 @@ var (
 )
 
 // syncUp populates the registry information from a peer eureka node.
-func (d *Discovery) syncUp() (err error) {
-	for _, node := range d.nodes.AllNodes() {
-		if d.nodes.Myself(node.Addr) {
+func (d *Discovery) syncUp() {
+	nodes := d.nodes.Load().(*registry.Nodes)
+	for _, node := range nodes.AllNodes() {
+		if nodes.Myself(node.Addr) {
 			continue
 		}
 		uri := fmt.Sprintf(_fetchAllURL, node.Addr)
@@ -26,7 +29,7 @@ func (d *Discovery) syncUp() (err error) {
 			Code int                          `json:"code"`
 			Data map[string][]*model.Instance `json:"data"`
 		}
-		if err = d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
+		if err := d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
 			log.Errorf("d.client.Get(%v) error(%v)", uri, err)
 			continue
 		}
@@ -36,13 +39,12 @@ func (d *Discovery) syncUp() (err error) {
 		}
 		for _, is := range res.Data {
 			for _, i := range is {
-				d.registry.Register(i, i.LatestTimestamp)
+				_ = d.registry.Register(i, i.LatestTimestamp)
 			}
 		}
 		// NOTE: no return, make sure that all instances from other nodes register into self.
 	}
-	d.nodes.UP()
-	return
+	nodes.UP()
 }
 
 func (d *Discovery) regSelf() context.CancelFunc {
@@ -122,7 +124,7 @@ func (d *Discovery) nodesproc() {
 		}
 		var (
 			nodes []string
-			zones = make(map[string]string)
+			zones = make(map[string][]string)
 		)
 		for _, ins := range ins.Instances {
 			for _, in := range ins {
@@ -132,14 +134,20 @@ func (d *Discovery) nodesproc() {
 						if in.Zone == arg.Zone {
 							nodes = append(nodes, u.Host)
 						} else {
-							zones[u.Host] = in.Zone
+							zones[in.Zone] = append(zones[in.Zone], u.Host)
 						}
 					}
 				}
 			}
 		}
 		lastTs = ins.LatestTimestamp
-		d.nodes.Update(nodes, zones, model.NodeStatusUP)
+		c := new(conf.Config)
+		*c = *d.c
+		c.Nodes = nodes
+		c.Zones = zones
+		ns := registry.NewNodes(c)
+		ns.UP()
+		d.nodes.Store(ns)
 		log.Infof("discovery changed nodes:%v zones:%v", nodes, zones)
 	}
 }

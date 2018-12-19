@@ -18,12 +18,12 @@ func TestReplicate(t *testing.T) {
 	Convey("test replicate", t, func() {
 		i := model.NewInstance(reg)
 		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
+			Env:        &dc.Env{},
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
 		})
-		ns := nodes.nodes.Load().([]*Node)
-		ns[0].client.SetTransport(gock.DefaultTransport)
-		ns[1].client.SetTransport(gock.DefaultTransport)
+		nodes.nodes[0].client.SetTransport(gock.DefaultTransport)
+		nodes.nodes[1].client.SetTransport(gock.DefaultTransport)
 		httpMock("POST", "http://127.0.0.1:7172/discovery/register").Reply(200).JSON(`{"code":0}`)
 		httpMock("POST", "http://127.0.0.1:7173/discovery/register").Reply(200).JSON(`{"code":0}`)
 		err := nodes.Replicate(context.TODO(), model.Register, i, false)
@@ -38,18 +38,20 @@ func TestReplicate(t *testing.T) {
 func TestNodes(t *testing.T) {
 	Convey("test nodes", t, func() {
 		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
+			Env:        &dc.Env{},
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
-			Zones:      map[string]string{"zone": "127.0.0.1:7172"},
+			Zones:      map[string][]string{"zone": []string{"127.0.0.1:7172"}},
 		})
 		res := nodes.Nodes()
 		So(len(res), ShouldResemble, 3)
 	})
 	Convey("test all nodes", t, func() {
 		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
+			Env:        &dc.Env{},
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
-			Zones:      map[string]string{"zone": "127.0.0.1:7172"},
+			Zones:      map[string][]string{"zone": []string{"127.0.0.1:7172"}},
 		})
 		res := nodes.AllNodes()
 		So(len(res), ShouldResemble, 4)
@@ -59,12 +61,12 @@ func TestNodes(t *testing.T) {
 func TestUp(t *testing.T) {
 	Convey("test up", t, func() {
 		nodes := NewNodes(&dc.Config{HTTPClient: &http.ClientConfig{},
+			Env:        &dc.Env{},
 			HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
 			Nodes:      []string{"127.0.0.1:7172", "127.0.0.1:7173", "127.0.0.1:7171"},
 		})
 		nodes.UP()
-		ns := nodes.nodes.Load().([]*Node)
-		for _, nd := range ns {
+		for _, nd := range nodes.nodes {
 			if nd.addr == "127.0.0.1:7171" {
 				So(nd.status, ShouldResemble, model.NodeStatusUP)
 			}

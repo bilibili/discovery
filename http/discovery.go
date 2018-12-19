@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
 	"time"
 
 	"github.com/Bilibili/discovery/errors"
@@ -109,7 +108,7 @@ func poll(c *gin.Context) {
 		return
 	case <-time.After(_pollWaitSecond):
 		result(c, nil, errors.NotModified)
-	case <-c.Writer.(http.CloseNotifier).CloseNotify():
+	case <-c.Done():
 	}
 	result(c, nil, errors.NotModified)
 	dis.DelConns(arg)
@@ -139,7 +138,7 @@ func polls(c *gin.Context) {
 		}
 		return
 	case <-time.After(_pollWaitSecond):
-	case <-c.Writer.(http.CloseNotifier).CloseNotify():
+	case <-c.Done():
 	}
 	result(c, nil, errors.NotModified)
 	dis.DelConns(arg)
@@ -152,8 +151,7 @@ func set(c *gin.Context) {
 		return
 	}
 	// len of color,status,metadata must equal to len of hostname or be zero
-	if (len(arg.Hostname) != len(arg.Color) && len(arg.Color) != 0) ||
-		(len(arg.Hostname) != len(arg.Status) && len(arg.Status) != 0) ||
+	if (len(arg.Hostname) != len(arg.Status) && len(arg.Status) != 0) ||
 		(len(arg.Hostname) != len(arg.Metadata) && len(arg.Metadata) != 0) {
 		result(c, nil, errors.ParamsErr)
 		return

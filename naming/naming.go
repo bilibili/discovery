@@ -4,6 +4,14 @@ import (
 	"context"
 )
 
+// metadata common key
+const (
+	MetaWeight  = "weight"
+	MetaCluster = "cluster"
+	MetaZone    = "zone"
+	MetaColor   = "color"
+)
+
 // Instance represents a server the client connects to.
 type Instance struct {
 	// Region is region.
@@ -19,8 +27,6 @@ type Instance struct {
 	// Addrs is the address of app instance
 	// format: scheme://host
 	Addrs []string `json:"addrs"`
-	// Color distinguishs grey or common.
-	Color string `json:"color"`
 	// Version is publishing version.
 	Version string `json:"version"`
 	// LastTs is instance latest updated timestamp
@@ -37,7 +43,7 @@ type Resolver interface {
 	Close() error
 }
 
-// Registry Register an instance and renew automatically
+// Registry Register an instance and renew automatically.
 type Registry interface {
 	Register(ins *Instance) (cancel context.CancelFunc, err error)
 	Close() error
