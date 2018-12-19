@@ -13,7 +13,6 @@ import (
 
 // Nodes is helper to manage lifecycle of a collection of Nodes.
 type Nodes struct {
-	c        *conf.Config
 	nodes    []*Node
 	zones    map[string][]*Node
 	selfAddr string

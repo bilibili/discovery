@@ -20,8 +20,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	os.Setenv("ZONE", "test")
-	os.Setenv("DEPLOY_ENV", "test")
 	flag.Parse()
 	go mockDiscoverySvr()
 	time.Sleep(time.Second)
@@ -31,9 +29,10 @@ func TestMain(m *testing.M) {
 func mockDiscoverySvr() {
 	c := &conf.Config{
 		Env: &conf.Env{
+			Region:    "test",
 			Zone:      "test",
 			DeployEnv: "test",
-			Host:      "test",
+			Host:      "test_server",
 		},
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &conf.ServerConfig{
@@ -55,12 +54,13 @@ func TestDiscovery(t *testing.T) {
 		Region: "test",
 		Zone:   "test",
 		Env:    "test",
-		Host:   "test",
+		Host:   "test-host",
 	}
 	dis := New(conf)
 	appid := "test1"
 	Convey("test discovery register", t, func() {
 		instance := &Instance{
+			Region:   "test",
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
@@ -79,6 +79,7 @@ func TestDiscovery(t *testing.T) {
 		Convey("test discovery set", func() {
 			rs := dis.Build(appid)
 			inSet := &Instance{
+				Region:   "test",
 				Zone:     "test",
 				Env:      "test",
 				AppID:    appid,
@@ -109,6 +110,7 @@ func TestDiscovery(t *testing.T) {
 		So(len(ins["test"]), ShouldEqual, 1)
 		So(ins["test"][0].AppID, ShouldEqual, appid)
 		instance2 := &Instance{
+			Region:   "test",
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
