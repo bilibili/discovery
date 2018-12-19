@@ -1,4 +1,7 @@
 #### Discovery
 
 ##### Version 1.0.0
-1. discovery
+> 1. discovery register&polls&replica  
+> 2. self-discovering nodes  
+> 3. metadata updates  
+> 4. naming client  & grpc resolver  
