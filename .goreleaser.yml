@@ -20,10 +20,9 @@ archive:
     386: i386
     amd64: x86_64
   files:
-    - LICENSE.txt
+    - LICENSE
     - README.md
     - CHANGELOG.md
-    - docs/*
     - cmd/discovery/discovery-example.toml 
 checksum:
   name_template: 'checksums.txt'
