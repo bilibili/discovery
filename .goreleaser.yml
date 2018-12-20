@@ -6,6 +6,7 @@ before:
     - go mod download
     # you may remove this if you don't need go generate
     - go generate ./...
+    - cp cmd/discovery/discovery-example.toml configs/discovery-example.toml
 builds:
 - 
  env:
@@ -23,7 +24,7 @@ archive:
     - LICENSE
     - README.md
     - CHANGELOG.md
-    - cmd/discovery/discovery-example.toml 
+    - configs/* 
 checksum:
   name_template: 'checksums.txt'
 snapshot:
