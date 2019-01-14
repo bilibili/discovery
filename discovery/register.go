@@ -3,9 +3,10 @@ package discovery
 import (
 	"context"
 
-	"github.com/Bilibili/discovery/errors"
-	"github.com/Bilibili/discovery/model"
-	"github.com/Bilibili/discovery/registry"
+	"discovery/errors"
+	"discovery/model"
+	"discovery/registry"
+
 	log "github.com/golang/glog"
 )
 

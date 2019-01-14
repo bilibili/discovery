@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Bilibili/discovery/naming"
+	"discovery/naming"
 )
 
 // This Example register a server provider into discovery.

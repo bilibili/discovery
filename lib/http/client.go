@@ -12,7 +12,7 @@ import (
 	"strings"
 	xtime "time"
 
-	"github.com/Bilibili/discovery/lib/time"
+	"discovery/lib/time"
 )
 
 var (

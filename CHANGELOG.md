@@ -1,4 +1,6 @@
 #### Discovery
+##### Version 1.0.1
+> 1.rename import path  
 
 ##### Version 1.0.0
 > 1. discovery register&polls&replica  

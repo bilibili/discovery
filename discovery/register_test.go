@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	dc "github.com/Bilibili/discovery/conf"
-	"github.com/Bilibili/discovery/errors"
-	"github.com/Bilibili/discovery/lib/http"
-	xtime "github.com/Bilibili/discovery/lib/time"
-	"github.com/Bilibili/discovery/model"
+	dc "discovery/conf"
+	"discovery/errors"
+	"discovery/lib/http"
+	xtime "discovery/lib/time"
+	"discovery/model"
 
 	. "github.com/smartystreets/goconvey/convey"
 	gock "gopkg.in/h2non/gock.v1"

@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Bilibili/discovery/errors"
-	"github.com/Bilibili/discovery/model"
+	"discovery/errors"
+	"discovery/model"
+
 	log "github.com/golang/glog"
 )
 

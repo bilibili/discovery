@@ -4,7 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/Bilibili/discovery/lib/http"
+	"discovery/lib/http"
+
 	"github.com/BurntSushi/toml"
 )
 

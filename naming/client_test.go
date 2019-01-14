@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Bilibili/discovery/conf"
-	"github.com/Bilibili/discovery/discovery"
-	"github.com/Bilibili/discovery/http"
-	xhttp "github.com/Bilibili/discovery/lib/http"
-	xtime "github.com/Bilibili/discovery/lib/time"
+	"discovery/conf"
+	"discovery/discovery"
+	"discovery/http"
+	xhttp "discovery/lib/http"
+	xtime "discovery/lib/time"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

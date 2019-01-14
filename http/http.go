@@ -7,9 +7,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Bilibili/discovery/conf"
-	"github.com/Bilibili/discovery/discovery"
-	"github.com/Bilibili/discovery/errors"
+	"discovery/conf"
+	"discovery/discovery"
+	"discovery/errors"
+
 	"github.com/gin-gonic/gin"
 	log "github.com/golang/glog"
 )

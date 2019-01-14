@@ -7,9 +7,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Bilibili/discovery/conf"
-	"github.com/Bilibili/discovery/discovery"
-	"github.com/Bilibili/discovery/http"
+	"discovery/conf"
+	"discovery/discovery"
+	"discovery/http"
+
 	log "github.com/golang/glog"
 )
 
