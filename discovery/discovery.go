@@ -22,7 +22,7 @@ func New(c *conf.Config) (d *Discovery, cancel context.CancelFunc) {
 	d = &Discovery{
 		c:        c,
 		client:   http.NewClient(c.HTTPClient),
-		registry: registry.NewRegistry(),
+		registry: registry.NewRegistry(c),
 	}
 	d.nodes.Store(registry.NewNodes(c))
 	d.syncUp()

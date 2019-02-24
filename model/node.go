@@ -21,3 +21,17 @@ type Node struct {
 	Status NodeStatus `json:"status"`
 	Zone   string     `json:"zone"`
 }
+
+// Scheduler info.
+type Scheduler struct {
+	AppID  string `json:"app_id,omitempty"`
+	Env    string `json:"env"`
+	Zones  []Zone `json:"zones"` // zone-ratio
+	Remark string `json:"remark"`
+}
+
+// Zone info.
+type Zone struct {
+	Src string         `json:"src"`
+	Dst map[string]int `json:"dst"`
+}
