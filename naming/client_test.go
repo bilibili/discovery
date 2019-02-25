@@ -17,7 +17,6 @@ import (
 	xtime "discovery/lib/time"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -201,22 +200,30 @@ func TestUseScheduler(t *testing.T) {
 		}
 		return insInfo
 	}
-	insInfo := newIns()
-	inss := insInfo.UseScheduler("sh001")
-	assert.Len(t, inss, 4, "use scheduler for sh001")
-	logInss(t, "sh001", inss)
-	insInfo = newIns()
-	inss = insInfo.UseScheduler("sh002")
-	assert.Len(t, inss, 4, "use scheduler for sh002")
-	logInss(t, "sh002", inss)
-	insInfo = newIns()
-	inss = insInfo.UseScheduler("sh003")
-	assert.Len(t, inss, 2, "use scheduler for sh003 without scheduler")
-	logInss(t, "sh003", inss)
-	insInfo = newIns()
-	inss = insInfo.UseScheduler("sh004")
-	assert.Len(t, inss, 6, "zone not exit")
-	logInss(t, "sh004", inss)
+	Convey("use scheduler for sh001", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh001")
+		So(len(inss), ShouldEqual, 4)
+		logInss(t, "sh001", inss)
+	})
+	Convey("use scheduler for sh002", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh002")
+		So(len(inss), ShouldEqual, 4)
+		logInss(t, "sh002", inss)
+	})
+	Convey("use scheduler for sh003 without scheduler", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh003")
+		So(len(inss), ShouldEqual, 2)
+		logInss(t, "sh003", inss)
+	})
+	Convey("zone not exit", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh004")
+		So(len(inss), ShouldEqual, 6)
+		logInss(t, "sh004", inss)
+	})
 }
 
 func logInss(t *testing.T, msg string, inss []*Instance) {
