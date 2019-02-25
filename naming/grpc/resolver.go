@@ -106,11 +106,11 @@ func (r *Resolver) watcher() {
 				return
 			}
 		}
-		insMap, ok := r.nr.Fetch()
+		ins, ok := r.nr.Fetch()
 		if ok {
-			instances, ok := insMap[r.zone]
+			instances, ok := ins.Instances[r.zone]
 			if !ok {
-				for _, value := range insMap {
+				for _, value := range ins.Instances {
 					instances = append(instances, value...)
 				}
 			}

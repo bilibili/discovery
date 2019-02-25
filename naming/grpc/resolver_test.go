@@ -13,8 +13,8 @@ import (
 type mockResolver struct {
 }
 
-func (m *mockResolver) Fetch() (ins map[string][]*naming.Instance, ok bool) {
-	ins = make(map[string][]*naming.Instance)
+func (m *mockResolver) Fetch() (insInfo *naming.InstancesInfo, ok bool) {
+	ins := make(map[string][]*naming.Instance)
 	ins["sh001"] = []*naming.Instance{
 		&naming.Instance{Addrs: []string{"http://127.0.0.1:8080", "grpc://127.0.0.1:9090"}, Metadata: map[string]string{naming.MetaCluster: "c1"}},
 		&naming.Instance{Addrs: []string{"http://127.0.0.2:8080", "grpc://127.0.0.2:9090"}, Metadata: map[string]string{naming.MetaCluster: "c1"}},
@@ -27,6 +27,9 @@ func (m *mockResolver) Fetch() (ins map[string][]*naming.Instance, ok bool) {
 		&naming.Instance{Addrs: []string{"http://127.0.0.1:8080", "grpc://127.0.0.1:9090"}},
 		&naming.Instance{Addrs: []string{"http://127.0.0.2:8080", "grpc://127.0.0.2:9090"}},
 		&naming.Instance{Addrs: []string{"http://127.0.0.3:8080", "grpc://127.0.0.3:9090"}},
+	}
+	insInfo = &naming.InstancesInfo{
+		Instances: ins,
 	}
 	ok = true
 	return

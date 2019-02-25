@@ -14,6 +14,7 @@ require (
 	github.com/modern-go/reflect2 v0.0.0-20180511053014-58118c1ea916
 	github.com/smartystreets/assertions v0.0.0-20180301161246-7678a5452ebe
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
+	github.com/stretchr/testify v1.3.0
 	github.com/ugorji/go v0.0.0-20180407103000-f3cacc17c85e
 	golang.org/x/net v0.0.0-20180826012351-8a410e7b638d
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f

@@ -17,6 +17,7 @@ import (
 	xtime "discovery/lib/time"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMain(m *testing.M) {
@@ -57,6 +58,7 @@ func TestDiscovery(t *testing.T) {
 		Host:   "test-host",
 	}
 	dis := New(conf)
+	println("new")
 	appid := "test1"
 	Convey("test discovery register", t, func() {
 		instance := &Instance{
@@ -98,7 +100,7 @@ func TestDiscovery(t *testing.T) {
 			ch := rs.Watch()
 			<-ch
 			ins, _ := rs.Fetch()
-			So(ins["test"][0].Metadata["weight"], ShouldResemble, "111")
+			So(ins.Instances["test"][0].Metadata["weight"], ShouldResemble, "111")
 		})
 	})
 	Convey("test discovery watch", t, func() {
@@ -107,8 +109,8 @@ func TestDiscovery(t *testing.T) {
 		<-ch
 		ins, ok := rsl.Fetch()
 		So(ok, ShouldBeTrue)
-		So(len(ins["test"]), ShouldEqual, 1)
-		So(ins["test"][0].AppID, ShouldEqual, appid)
+		So(len(ins.Instances["test"]), ShouldEqual, 1)
+		So(ins.Instances["test"][0].AppID, ShouldEqual, appid)
 		instance2 := &Instance{
 			Region:   "test",
 			Zone:     "test",
@@ -122,8 +124,8 @@ func TestDiscovery(t *testing.T) {
 		<-ch
 		ins, ok = rsl.Fetch()
 		So(ok, ShouldBeTrue)
-		So(len(ins["test"]), ShouldEqual, 2)
-		So(ins["test"][0].AppID, ShouldEqual, appid)
+		So(len(ins.Instances["test"]), ShouldEqual, 2)
+		So(ins.Instances["test"][0].AppID, ShouldEqual, appid)
 		rsl.Close()
 		conf.Nodes = []string{"127.0.0.1:7172"}
 		dis.Reload(conf)
@@ -151,4 +153,75 @@ func addNewInstance(ins *Instance) error {
 		Code int `json:"code"`
 	})
 	return cli.Post(context.TODO(), "http://127.0.0.1:7171/discovery/register", "", params, &res)
+}
+
+func TestUseScheduler(t *testing.T) {
+	newIns := func() *InstancesInfo {
+		insInfo := &InstancesInfo{}
+		insInfo.Instances = make(map[string][]*Instance)
+		insInfo.Instances["sh001"] = []*Instance{
+			&Instance{Zone: "sh001", Metadata: map[string]string{
+				"weight": "10",
+			}},
+			&Instance{Zone: "sh001", Metadata: map[string]string{
+				"weight": "10",
+			}},
+		}
+		insInfo.Instances["sh002"] = []*Instance{
+			&Instance{Zone: "sh002", Metadata: map[string]string{
+				"weight": "5",
+			}},
+			&Instance{Zone: "sh002", Metadata: map[string]string{
+				"weight": "2",
+			}},
+		}
+		insInfo.Instances["sh003"] = []*Instance{
+			&Instance{Zone: "sh003", Metadata: map[string]string{
+				"weight": "5",
+			}},
+			&Instance{Zone: "sh003", Metadata: map[string]string{
+				"weight": "3",
+			}},
+		}
+		insInfo.Scheduler = []Zone{
+			Zone{
+				Src: "sh001",
+				Dst: map[string]int64{
+					"sh001": 2,
+					"sh002": 1,
+				},
+			},
+			Zone{
+				Src: "sh002",
+				Dst: map[string]int64{
+					"sh001": 1,
+					"sh002": 2,
+				},
+			},
+		}
+		return insInfo
+	}
+	insInfo := newIns()
+	inss := insInfo.UseScheduler("sh001")
+	assert.Len(t, inss, 4, "use scheduler for sh001")
+	logInss(t, "sh001", inss)
+	insInfo = newIns()
+	inss = insInfo.UseScheduler("sh002")
+	assert.Len(t, inss, 4, "use scheduler for sh002")
+	logInss(t, "sh002", inss)
+	insInfo = newIns()
+	inss = insInfo.UseScheduler("sh003")
+	assert.Len(t, inss, 2, "use scheduler for sh003 without scheduler")
+	logInss(t, "sh003", inss)
+	insInfo = newIns()
+	inss = insInfo.UseScheduler("sh004")
+	assert.Len(t, inss, 6, "zone not exit")
+	logInss(t, "sh004", inss)
+}
+
+func logInss(t *testing.T, msg string, inss []*Instance) {
+	t.Log("instance of", msg)
+	for _, in := range inss {
+		t.Logf("%+v", in)
+	}
 }

@@ -68,10 +68,10 @@ func (c *consumer) getInstances(ch <-chan struct{}) {
 			continue
 		}
 		// get local zone instances, otherwise get all zone instances.
-		if in, ok := ins[c.conf.Zone]; ok {
+		if in, ok := ins.Instances[c.conf.Zone]; ok {
 			c.ins = in
 		} else {
-			for _, in := range ins {
+			for _, in := range ins.Instances {
 				c.ins = append(c.ins, in...)
 			}
 		}

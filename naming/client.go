@@ -128,7 +128,7 @@ func New(c *Config) (d *Discovery) {
 	}
 	ins, ok := resolver.Fetch()
 	if ok {
-		d.newSelf(ins)
+		d.newSelf(ins.Instances)
 	}
 	go d.selfproc(resolver, event)
 	return
@@ -142,7 +142,7 @@ func (d *Discovery) selfproc(resolver Resolver, event <-chan struct{}) {
 		}
 		zones, ok := resolver.Fetch()
 		if ok {
-			d.newSelf(zones)
+			d.newSelf(zones.Instances)
 		}
 	}
 }
@@ -235,12 +235,12 @@ func (r *Resolve) Watch() <-chan struct{} {
 }
 
 // Fetch fetch resolver instance.
-func (r *Resolve) Fetch() (ins map[string][]*Instance, ok bool) {
+func (r *Resolve) Fetch() (ins *InstancesInfo, ok bool) {
 	r.d.mutex.RLock()
 	app, ok := r.d.apps[r.id]
 	r.d.mutex.RUnlock()
 	if ok {
-		ins, ok = app.zoneIns.Load().(map[string][]*Instance)
+		ins, ok = app.zoneIns.Load().(*InstancesInfo)
 		return
 	}
 	return
@@ -508,7 +508,7 @@ func (d *Discovery) switchNode() {
 	atomic.AddUint64(&d.nodeIdx, 1)
 }
 
-func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err error) {
+func (d *Discovery) polls(ctx context.Context) (apps map[string]*InstancesInfo, err error) {
 	var (
 		lastTss []int64
 		appIDs  []string
@@ -534,8 +534,8 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err err
 	}
 	uri := fmt.Sprintf(_pollURL, host)
 	res := new(struct {
-		Code int                `json:"code"`
-		Data map[string]appData `json:"data"`
+		Code int                       `json:"code"`
+		Data map[string]*InstancesInfo `json:"data"`
 	})
 	params := url.Values{}
 	params.Set("env", c.Env)
@@ -571,7 +571,7 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]appData, err err
 	return
 }
 
-func (d *Discovery) broadcast(apps map[string]appData) {
+func (d *Discovery) broadcast(apps map[string]*InstancesInfo) {
 	for appID, v := range apps {
 		var count int
 		for zone, ins := range v.Instances {
@@ -588,7 +588,7 @@ func (d *Discovery) broadcast(apps map[string]appData) {
 		d.mutex.RUnlock()
 		if ok {
 			app.lastTs = v.LastTs
-			app.zoneIns.Store(v.Instances)
+			app.zoneIns.Store(v)
 			d.mutex.RLock()
 			for rs := range app.resolver {
 				select {
