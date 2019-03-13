@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"discovery/conf"
 	"discovery/errors"
 	"discovery/model"
 
@@ -22,10 +23,10 @@ type Registry struct {
 	appm  map[string]*model.Apps // appid-env -> apps
 	aLock sync.RWMutex
 
-	conns map[string]map[string]*conn // region.zone.env.appid-> host
-	cLock sync.RWMutex
-
-	gd *Guard
+	conns     map[string]map[string]*conn // region.zone.env.appid-> host
+	cLock     sync.RWMutex
+	scheduler *scheduler
+	gd        *Guard
 }
 
 // conn the poll chan contains consumer.
@@ -42,12 +43,14 @@ func newConn(ch chan map[string]*model.InstanceInfo, latestTime int64, arg *mode
 }
 
 // NewRegistry new register.
-func NewRegistry() (r *Registry) {
+func NewRegistry(conf *conf.Config) (r *Registry) {
 	r = &Registry{
 		appm:  make(map[string]*model.Apps),
 		conns: make(map[string]map[string]*conn),
 		gd:    new(Guard),
 	}
+	r.scheduler = newScheduler(r)
+	r.scheduler.Load(conf.Scheduler)
 	go r.proc()
 	return
 }
@@ -92,7 +95,7 @@ func (r *Registry) Register(ins *model.Instance, latestTime int64) (err error) {
 		r.gd.incrExp()
 	}
 	// NOTE: make sure free poll before update appid latest timestamp.
-	r.broadcast(i.Zone, i.Env, i.AppID, a)
+	r.broadcast(i.Env, i.AppID)
 	return
 }
 
@@ -138,7 +141,7 @@ func (r *Registry) cancel(zone, env, appid, hostname string, latestTime int64) (
 		delete(r.appm, appsKey(appid, env))
 		r.aLock.Unlock()
 	}
-	r.broadcast(zone, env, appid, a[0]) // NOTE: make sure free poll before update appid latest timestamp.
+	r.broadcast(env, appid) // NOTE: make sure free poll before update appid latest timestamp.
 	return
 }
 
@@ -165,6 +168,13 @@ func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint3
 		return
 	}
 	info, err = a.InstanceInfo(zone, latestTime, status)
+	if err != nil {
+		return
+	}
+	sch := r.scheduler.Get(appid, env)
+	if sch != nil {
+		info.Scheduler = sch.Zones
+	}
 	return
 }
 
@@ -221,7 +231,7 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 
 // broadcast on poll by chan.
 // NOTE: make sure free poll before update appid latest timestamp.
-func (r *Registry) broadcast(zone, env, appid string, a *model.App) {
+func (r *Registry) broadcast(env, appid string) {
 	key := pollKey(env, appid)
 	r.cLock.Lock()
 	defer r.cLock.Unlock()
@@ -234,7 +244,7 @@ func (r *Registry) broadcast(zone, env, appid string, a *model.App) {
 		ii, _ := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
 		for i := 0; i < conn.count; i++ {
 			select {
-			case conn.ch <- map[string]*model.InstanceInfo{a.AppID: ii}: // NOTE: if chan is full, means no poller.
+			case conn.ch <- map[string]*model.InstanceInfo{appid: ii}: // NOTE: if chan is full, means no poller.
 				log.Infof("broadcast to(%s) success(%d)", conn.arg.Hostname, i+1)
 			case <-time.After(time.Millisecond * 500):
 				log.Infof("broadcast to(%s) failed(%d) maybe chan full", conn.arg.Hostname, i+1)
@@ -256,7 +266,7 @@ func (r *Registry) Set(arg *model.ArgSet) (ok bool) {
 	if ok = a[0].Set(arg); !ok {
 		return
 	}
-	r.broadcast(arg.Zone, arg.Env, arg.AppID, a[0])
+	r.broadcast(arg.Env, arg.AppID)
 	return
 }
 

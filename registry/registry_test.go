@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"discovery/conf"
 	"discovery/errors"
 	"discovery/model"
 
@@ -401,7 +402,7 @@ func benchCompareInstance(b *testing.B, src *model.Instance, i *model.Instance) 
 
 func register(t *testing.T, is ...*model.Instance) (r *Registry) {
 	Convey("test register", t, func() {
-		r = NewRegistry()
+		r = NewRegistry(&conf.Config{})
 		var num int
 		for _, i := range is {
 			err := r.Register(i, 0)
@@ -419,7 +420,7 @@ func register(t *testing.T, is ...*model.Instance) (r *Registry) {
 }
 
 func benchRegister(b *testing.B) (r *Registry, i *model.Instance) {
-	r = NewRegistry()
+	r = NewRegistry(&conf.Config{})
 	i = model.NewInstance(reg)
 	if err := r.Register(i, 0); err != nil {
 		b.Errorf("Reigster(%v) error(%v)", i.AppID, err)
@@ -429,7 +430,7 @@ func benchRegister(b *testing.B) (r *Registry, i *model.Instance) {
 
 func TestEvict(t *testing.T) {
 	Convey("test evict for protect", t, func() {
-		r := NewRegistry()
+		r := NewRegistry(&conf.Config{})
 		m := model.NewInstance(reg)
 		// promise the renewtime of instance is expire
 		m.RenewTimestamp -= 100
@@ -448,7 +449,7 @@ func TestEvict(t *testing.T) {
 
 func TestEvict2(t *testing.T) {
 	Convey("test evict for cancel", t, func() {
-		r := NewRegistry()
+		r := NewRegistry(&conf.Config{})
 		m := model.NewInstance(reg)
 		err := r.Register(m, 0)
 		So(err, ShouldBeNil)

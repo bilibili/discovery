@@ -1,0 +1,72 @@
+
+mode: atomic
+mode: atomic
+mode: atomic
+discovery/discovery/register.go:14.111,16.17 2 22
+discovery/discovery/register.go:16.17,18.3 1 0
+discovery/discovery/register.go:22.98,24.9 2 4
+discovery/discovery/register.go:29.2,29.22 1 3
+discovery/discovery/register.go:33.2,33.43 1 2
+discovery/discovery/register.go:38.2,38.8 1 2
+discovery/discovery/register.go:24.9,28.3 3 1
+discovery/discovery/register.go:29.22,32.3 2 1
+discovery/discovery/register.go:33.43,35.3 1 1
+discovery/discovery/register.go:35.8,35.50 1 1
+discovery/discovery/register.go:35.50,37.3 1 1
+discovery/discovery/register.go:42.81,44.9 2 12
+discovery/discovery/register.go:49.2,49.22 1 11
+discovery/discovery/register.go:52.2,52.8 1 11
+discovery/discovery/register.go:44.9,48.3 3 1
+discovery/discovery/register.go:49.22,51.3 1 11
+discovery/discovery/register.go:56.83,58.2 1 1
+discovery/discovery/register.go:61.105,63.2 1 4
+discovery/discovery/register.go:66.116,68.34 2 1
+discovery/discovery/register.go:76.2,76.8 1 1
+discovery/discovery/register.go:68.34,70.17 2 2
+discovery/discovery/register.go:74.3,74.16 1 2
+discovery/discovery/register.go:70.17,72.12 2 0
+discovery/discovery/register.go:80.129,82.2 1 6
+discovery/discovery/register.go:85.51,87.2 1 0
+discovery/discovery/register.go:90.66,92.2 1 1
+discovery/discovery/register.go:95.75,96.26 1 1
+discovery/discovery/register.go:99.2,99.8 1 1
+discovery/discovery/register.go:96.26,98.3 1 0
+discovery/discovery/syncup.go:22.30,24.40 2 11
+discovery/discovery/syncup.go:48.2,48.12 1 11
+discovery/discovery/syncup.go:24.40,25.30 1 22
+discovery/discovery/syncup.go:28.3,33.74 3 11
+discovery/discovery/syncup.go:37.3,37.20 1 1
+discovery/discovery/syncup.go:41.3,41.31 1 1
+discovery/discovery/syncup.go:25.30,26.12 1 11
+discovery/discovery/syncup.go:33.74,35.12 2 10
+discovery/discovery/syncup.go:37.20,39.12 2 0
+discovery/discovery/syncup.go:41.31,42.25 1 0
+discovery/discovery/syncup.go:42.25,44.5 1 0
+discovery/discovery/syncup.go:51.50,71.12 5 9
+discovery/discovery/syncup.go:100.2,100.15 1 9
+discovery/discovery/syncup.go:71.12,74.7 3 9
+discovery/discovery/syncup.go:74.7,75.11 1 9
+discovery/discovery/syncup.go:76.20,83.78 2 0
+discovery/discovery/syncup.go:86.22,93.63 2 9
+discovery/discovery/syncup.go:96.5,96.11 1 9
+discovery/discovery/syncup.go:83.78,85.6 1 0
+discovery/discovery/syncup.go:93.63,95.6 1 0
+discovery/discovery/syncup.go:103.33,107.6 2 9
+discovery/discovery/syncup.go:107.6,116.46 3 19
+discovery/discovery/syncup.go:121.3,123.24 3 19
+discovery/discovery/syncup.go:126.3,130.37 2 10
+discovery/discovery/syncup.go:144.3,152.65 9 10
+discovery/discovery/syncup.go:116.46,119.12 3 0
+discovery/discovery/syncup.go:123.24,125.4 1 8
+discovery/discovery/syncup.go:130.37,131.27 1 10
+discovery/discovery/syncup.go:131.27,132.35 1 11
+discovery/discovery/syncup.go:132.35,134.42 2 11
+discovery/discovery/syncup.go:134.42,135.30 1 11
+discovery/discovery/syncup.go:135.30,137.8 1 11
+discovery/discovery/syncup.go:137.13,139.8 1 0
+discovery/discovery/discovery.go:21.68,32.2 6 9
+mode: atomic
+mode: atomic
+mode: atomic
+mode: atomic
+mode: atomic

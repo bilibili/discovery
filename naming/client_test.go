@@ -57,6 +57,7 @@ func TestDiscovery(t *testing.T) {
 		Host:   "test-host",
 	}
 	dis := New(conf)
+	println("new")
 	appid := "test1"
 	Convey("test discovery register", t, func() {
 		instance := &Instance{
@@ -98,7 +99,7 @@ func TestDiscovery(t *testing.T) {
 			ch := rs.Watch()
 			<-ch
 			ins, _ := rs.Fetch()
-			So(ins["test"][0].Metadata["weight"], ShouldResemble, "111")
+			So(ins.Instances["test"][0].Metadata["weight"], ShouldResemble, "111")
 		})
 	})
 	Convey("test discovery watch", t, func() {
@@ -107,8 +108,8 @@ func TestDiscovery(t *testing.T) {
 		<-ch
 		ins, ok := rsl.Fetch()
 		So(ok, ShouldBeTrue)
-		So(len(ins["test"]), ShouldEqual, 1)
-		So(ins["test"][0].AppID, ShouldEqual, appid)
+		So(len(ins.Instances["test"]), ShouldEqual, 1)
+		So(ins.Instances["test"][0].AppID, ShouldEqual, appid)
 		instance2 := &Instance{
 			Region:   "test",
 			Zone:     "test",
@@ -122,8 +123,8 @@ func TestDiscovery(t *testing.T) {
 		<-ch
 		ins, ok = rsl.Fetch()
 		So(ok, ShouldBeTrue)
-		So(len(ins["test"]), ShouldEqual, 2)
-		So(ins["test"][0].AppID, ShouldEqual, appid)
+		So(len(ins.Instances["test"]), ShouldEqual, 2)
+		So(ins.Instances["test"][0].AppID, ShouldEqual, appid)
 		rsl.Close()
 		conf.Nodes = []string{"127.0.0.1:7172"}
 		dis.Reload(conf)
@@ -151,4 +152,83 @@ func addNewInstance(ins *Instance) error {
 		Code int `json:"code"`
 	})
 	return cli.Post(context.TODO(), "http://127.0.0.1:7171/discovery/register", "", params, &res)
+}
+
+func TestUseScheduler(t *testing.T) {
+	newIns := func() *InstancesInfo {
+		insInfo := &InstancesInfo{}
+		insInfo.Instances = make(map[string][]*Instance)
+		insInfo.Instances["sh001"] = []*Instance{
+			&Instance{Zone: "sh001", Metadata: map[string]string{
+				"weight": "10",
+			}},
+			&Instance{Zone: "sh001", Metadata: map[string]string{
+				"weight": "10",
+			}},
+		}
+		insInfo.Instances["sh002"] = []*Instance{
+			&Instance{Zone: "sh002", Metadata: map[string]string{
+				"weight": "5",
+			}},
+			&Instance{Zone: "sh002", Metadata: map[string]string{
+				"weight": "2",
+			}},
+		}
+		insInfo.Instances["sh003"] = []*Instance{
+			&Instance{Zone: "sh003", Metadata: map[string]string{
+				"weight": "5",
+			}},
+			&Instance{Zone: "sh003", Metadata: map[string]string{
+				"weight": "3",
+			}},
+		}
+		insInfo.Scheduler = []Zone{
+			Zone{
+				Src: "sh001",
+				Dst: map[string]int64{
+					"sh001": 2,
+					"sh002": 1,
+				},
+			},
+			Zone{
+				Src: "sh002",
+				Dst: map[string]int64{
+					"sh001": 1,
+					"sh002": 2,
+				},
+			},
+		}
+		return insInfo
+	}
+	Convey("use scheduler for sh001", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh001")
+		So(len(inss), ShouldEqual, 4)
+		logInss(t, "sh001", inss)
+	})
+	Convey("use scheduler for sh002", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh002")
+		So(len(inss), ShouldEqual, 4)
+		logInss(t, "sh002", inss)
+	})
+	Convey("use scheduler for sh003 without scheduler", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh003")
+		So(len(inss), ShouldEqual, 2)
+		logInss(t, "sh003", inss)
+	})
+	Convey("zone not exit", t, func() {
+		insInfo := newIns()
+		inss := insInfo.UseScheduler("sh004")
+		So(len(inss), ShouldEqual, 6)
+		logInss(t, "sh004", inss)
+	})
+}
+
+func logInss(t *testing.T, msg string, inss []*Instance) {
+	t.Log("instance of", msg)
+	for _, in := range inss {
+		t.Logf("%+v", in)
+	}
 }

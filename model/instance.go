@@ -94,6 +94,7 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 // InstanceInfo the info get by consumer.
 type InstanceInfo struct {
 	Instances       map[string][]*Instance `json:"instances"`
+	Scheduler       []Zone                 `json:"scheduler,omitempty"`
 	LatestTimestamp int64                  `json:"latest_timestamp"`
 }
 

@@ -2,6 +2,7 @@ package conf
 
 import (
 	"flag"
+	"io/ioutil"
 	"os"
 
 	"discovery/lib/http"
@@ -10,11 +11,12 @@ import (
 )
 
 var (
-	confPath  string
-	region    string
-	zone      string
-	deployEnv string
-	hostname  string
+	confPath      string
+	schedulerPath string
+	region        string
+	zone          string
+	deployEnv     string
+	hostname      string
 	// Conf conf
 	Conf = &Config{}
 )
@@ -29,6 +31,7 @@ func init() {
 	flag.StringVar(&zone, "zone", os.Getenv("ZONE"), "avaliable zone. or use ZONE env variable, value: sh001/sh002 etc.")
 	flag.StringVar(&deployEnv, "deploy.env", os.Getenv("DEPLOY_ENV"), "deploy env. or use DEPLOY_ENV env variable, value: dev/fat1/uat/pre/prod etc.")
 	flag.StringVar(&hostname, "hostname", hostname, "machine hostname")
+	flag.StringVar(&schedulerPath, "scheduler", "scheduler.json", "scheduler info")
 }
 
 // Config config.
@@ -38,6 +41,7 @@ type Config struct {
 	HTTPServer *ServerConfig
 	HTTPClient *http.ClientConfig
 	Env        *Env
+	Scheduler  []byte
 }
 
 // Fix fix env config.
@@ -77,6 +81,9 @@ type ServerConfig struct {
 func Init() (err error) {
 	if _, err = toml.DecodeFile(confPath, &Conf); err != nil {
 		return
+	}
+	if schedulerPath != "" {
+		Conf.Scheduler, _ = ioutil.ReadFile(schedulerPath)
 	}
 	return Conf.Fix()
 }
