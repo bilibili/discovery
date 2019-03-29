@@ -1,4 +1,7 @@
 
+# 同一discovery集群的所有node节点地址，包含本node
+nodes = ["127.0.0.1:7171"]
+
 # 本可用区zone(一般指机房)标识
 [env]
 region = "sh"
@@ -6,8 +9,6 @@ zone = "sh001"
 host = "test1"
 DeployEnv = "dev"
 
-# 同一discovery集群的所有node节点地址，包含本node
-nodes = ["127.0.0.1:7171"]
 
 # 其他可用区zone访问host和其标识
 # [zones]
