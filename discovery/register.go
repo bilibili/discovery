@@ -13,7 +13,7 @@ import (
 // Register a new instance.
 func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimestamp int64, replication bool) {
 	_ = d.registry.Register(ins, latestTimestamp)
-	if replication {
+	if !replication {
 		_ = d.nodes.Load().(*registry.Nodes).Replicate(c, model.Register, ins, ins.Zone != d.c.Env.Zone)
 	}
 }
