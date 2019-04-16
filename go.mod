@@ -1,4 +1,4 @@
-module discovery
+module github.com/bilibili/discovery
 
 require (
 	github.com/BurntSushi/toml v0.0.0-20170626110600-a368813c5e64
