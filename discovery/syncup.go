@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"time"
 
-	"discovery/conf"
-	"discovery/errors"
-	"discovery/model"
-	"discovery/registry"
+	"github.com/bilibili/discovery/conf"
+	"github.com/bilibili/discovery/errors"
+	"github.com/bilibili/discovery/model"
+	"github.com/bilibili/discovery/registry"
 
 	log "github.com/golang/glog"
 )

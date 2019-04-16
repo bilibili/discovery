@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	dc "discovery/conf"
-	"discovery/errors"
-	"discovery/lib/http"
-	"discovery/model"
+	dc "github.com/bilibili/discovery/conf"
+	"github.com/bilibili/discovery/errors"
+	"github.com/bilibili/discovery/lib/http"
+	"github.com/bilibili/discovery/model"
 
 	. "github.com/smartystreets/goconvey/convey"
 	gock "gopkg.in/h2non/gock.v1"

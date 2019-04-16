@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	ecode "discovery/errors"
-	"discovery/lib/http"
-	xtime "discovery/lib/time"
+	ecode "github.com/bilibili/discovery/errors"
+	"github.com/bilibili/discovery/lib/http"
+	xtime "github.com/bilibili/discovery/lib/time"
 
 	log "github.com/golang/glog"
 )

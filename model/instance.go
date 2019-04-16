@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"discovery/errors"
+	"github.com/bilibili/discovery/errors"
 
 	log "github.com/golang/glog"
 )

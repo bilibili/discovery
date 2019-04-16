@@ -4,9 +4,9 @@ import (
 	"context"
 	"sync/atomic"
 
-	"discovery/conf"
-	"discovery/lib/http"
-	"discovery/registry"
+	"github.com/bilibili/discovery/conf"
+	"github.com/bilibili/discovery/lib/http"
+	"github.com/bilibili/discovery/registry"
 )
 
 // Discovery discovery.

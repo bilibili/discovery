@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"discovery/errors"
-	"discovery/model"
+	"github.com/bilibili/discovery/errors"
+	"github.com/bilibili/discovery/model"
 
 	gin "github.com/gin-gonic/gin"
 	log "github.com/golang/glog"
