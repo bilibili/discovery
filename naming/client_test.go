@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	xhttp "discovery/lib/http"
-	xtime "discovery/lib/time"
+	xhttp "github.com/bilibili/discovery/lib/http"
+	xtime "github.com/bilibili/discovery/lib/time"
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
