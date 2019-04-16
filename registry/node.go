@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"strings"
 
-	"discovery/conf"
-	"discovery/errors"
-	"discovery/lib/http"
-	"discovery/model"
+	"github.com/bilibili/discovery/conf"
+	"github.com/bilibili/discovery/errors"
+	"github.com/bilibili/discovery/lib/http"
+	"github.com/bilibili/discovery/model"
 
 	log "github.com/golang/glog"
 )

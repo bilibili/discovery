@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
-	"discovery/model"
+	"github.com/bilibili/discovery/model"
 
 	log "github.com/golang/glog"
 )
