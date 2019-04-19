@@ -25,7 +25,7 @@ func newScheduler(r *Registry) *scheduler {
 
 // Load load scheduler info.
 func (s *scheduler) Load(conf []byte) {
-	if len(conf) > 0 {
+	if len(conf) == 0 {
 		return
 	}
 	schs := make([]*model.Scheduler, 0)
