@@ -16,3 +16,4 @@
 cmd/discovery/discovery
 dist/
 configs/
+go.sum
