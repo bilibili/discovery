@@ -25,10 +25,13 @@ func newScheduler(r *Registry) *scheduler {
 
 // Load load scheduler info.
 func (s *scheduler) Load(conf []byte) {
+	if len(conf) > 0 {
+		return
+	}
 	schs := make([]*model.Scheduler, 0)
 	err := json.Unmarshal(conf, &schs)
 	if err != nil {
-		log.Errorf("load scheduler  info  err %v", err)
+		log.Errorf("load scheduler info err %v", err)
 	}
 	for _, sch := range schs {
 		s.schedulers[appsKey(sch.AppID, sch.Env)] = sch
