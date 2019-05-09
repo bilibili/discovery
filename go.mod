@@ -1,26 +1,22 @@
 module discovery
 
 require (
-	github.com/BurntSushi/toml v0.0.0-20170626110600-a368813c5e64
-	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
+	github.com/BurntSushi/toml v0.3.1
+	github.com/bilibili/discovery v1.0.1
 	github.com/gin-gonic/gin v0.0.0-20180512030042-bf7803815b0b
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/gopherjs/gopherjs v0.0.0-20180424202546-8dffc02ea1cb // indirect
-	github.com/json-iterator/go v0.0.0-20180526014329-8744d7c5c7b4 // indirect
-	github.com/jtolds/gls v4.2.1+incompatible // indirect
-	github.com/mattn/go-isatty v0.0.4 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v0.0.0-20180511053014-58118c1ea916 // indirect
-	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect
-	github.com/smartystreets/assertions v0.0.0-20180301161246-7678a5452ebe // indirect
+	github.com/golang/protobuf v1.3.1 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
-	github.com/smartystreets/gunit v0.0.0-20180314194857-6f0d6275bdcd // indirect
-	github.com/stretchr/testify v1.3.0 // indirect
-	github.com/ugorji/go v0.0.0-20180407103000-f3cacc17c85e // indirect
+	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c // indirect
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
-	google.golang.org/grpc v0.0.0-20181030232906-a88340f3c899
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
-	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
+	golang.org/x/sys v0.0.0-20190508220229-2d0786266e9c // indirect
+	google.golang.org/grpc v1.20.1
 	gopkg.in/h2non/gock.v1 v1.0.8
-	gopkg.in/yaml.v2 v2.2.1 // indirect
+)
+
+replace (
+	golang.org/x/net => github.com/golang/net v0.0.0-20190311183353-d8887717615a
+	golang.org/x/sync => github.com/golang/sync v0.0.0-20181108010431-42b317875d0f
+	golang.org/x/sys => github.com/golang/sys v0.0.0-20180905080454-ebe1bf3edb33
+	google.golang.org/grpc => github.com/grpc/grpc-go v1.20.1
 )
