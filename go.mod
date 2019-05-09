@@ -1,17 +1,18 @@
-module discovery
+module github.com/bilibili/discovery
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/bilibili/discovery v1.0.1
+	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v0.0.0-20180512030042-bf7803815b0b
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/golang/protobuf v1.3.1 // indirect
+	github.com/mattn/go-isatty v0.0.7 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
-	golang.org/x/net v0.0.0-20190503192946-f4e77d36d62c // indirect
+	github.com/ugorji/go v1.1.4 // indirect
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
-	golang.org/x/sys v0.0.0-20190508220229-2d0786266e9c // indirect
 	google.golang.org/grpc v1.20.1
+	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
 	gopkg.in/h2non/gock.v1 v1.0.8
+	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
 
 replace (
