@@ -5,7 +5,9 @@ require (
 	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3 // indirect
 	github.com/gin-gonic/gin v0.0.0-20180512030042-bf7803815b0b
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
+	github.com/smartystreets/assertions v0.0.0-20190401211740-f487f9de1cd3 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a
 	github.com/ugorji/go v1.1.4 // indirect
 	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
