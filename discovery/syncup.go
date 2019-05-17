@@ -107,7 +107,6 @@ func (d *Discovery) nodesproc() {
 	for {
 		arg := &model.ArgPolls{
 			AppID:           []string{model.AppID},
-			Zone:            d.c.Env.Zone,
 			Env:             d.c.Env.DeployEnv,
 			Hostname:        d.c.Env.Host,
 			LatestTimestamp: []int64{lastTs},
