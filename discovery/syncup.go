@@ -131,7 +131,7 @@ func (d *Discovery) nodesproc() {
 				for _, addr := range in.Addrs {
 					u, err := url.Parse(addr)
 					if err == nil && u.Scheme == "http" {
-						if in.Zone == arg.Zone {
+						if in.Zone == d.c.Env.Zone {
 							nodes = append(nodes, u.Host)
 						} else {
 							zones[in.Zone] = append(zones[in.Zone], u.Host)
