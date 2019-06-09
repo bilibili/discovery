@@ -110,8 +110,8 @@ func (insInf *InstancesInfo) UseScheduler(zone string) (inss []*Instance) {
 		return
 	}
 	var comMulti int64 = 1
-	for _, weigth := range oriWeights {
-		comMulti *= weigth
+	for _, weight := range oriWeights {
+		comMulti *= weight
 	}
 	var fixWeight = make(map[string]int64, len(scheduler.weights))
 	for i, zone := range scheduler.zone {
