@@ -9,7 +9,7 @@ Discovery is a based service that is production-ready and primarily used at [Bil
 
 ### env
 
-`go1.9.x` (and later)
+`go1.12.x` (and later)
 
 ### build
 ```shell
