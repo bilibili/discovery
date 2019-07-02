@@ -6,7 +6,7 @@ import (
 
 	"github.com/bilibili/discovery/model"
 
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 // Scheduler info.
@@ -31,7 +31,7 @@ func (s *scheduler) Load(conf []byte) {
 	schs := make([]*model.Scheduler, 0)
 	err := json.Unmarshal(conf, &schs)
 	if err != nil {
-		log.Errorf("load scheduler info err %v", err)
+		log.Error("load scheduler info err %v", err)
 	}
 	for _, sch := range schs {
 		s.schedulers[appsKey(sch.AppID, sch.Env)] = sch

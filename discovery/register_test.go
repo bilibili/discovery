@@ -8,11 +8,11 @@ import (
 	"time"
 
 	dc "github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
-	"github.com/bilibili/discovery/lib/http"
-	xtime "github.com/bilibili/discovery/lib/time"
 	"github.com/bilibili/discovery/model"
 
+	"github.com/bilibili/kratos/pkg/ecode"
+	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	xtime "github.com/bilibili/kratos/pkg/time"
 	. "github.com/smartystreets/goconvey/convey"
 	gock "gopkg.in/h2non/gock.v1"
 )
@@ -70,10 +70,11 @@ var config = newConfig()
 func newConfig() *dc.Config {
 	c := &dc.Config{
 		HTTPClient: &http.ClientConfig{
+			Timeout:   xtime.Duration(time.Second * 30),
 			Dial:      xtime.Duration(time.Second),
 			KeepAlive: xtime.Duration(time.Second * 30),
 		},
-		HTTPServer: &dc.ServerConfig{Addr: "127.0.0.1:7171"},
+		HTTPServer: &http.ServerConfig{Addr: "127.0.0.1:7171"},
 		Nodes:      []string{"127.0.0.1:7171", "127.0.0.1:7172"},
 		Env: &dc.Env{
 			Zone:      "sh001",
@@ -105,7 +106,7 @@ func TestRegister(t *testing.T) {
 		svr.client.SetTransport(gock.DefaultTransport)
 		svr.syncUp()
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication, true)
 		ins, err := svr.Fetch(context.TODO(), fet)
 		So(err, ShouldBeNil)
 		So(len(ins.Instances), ShouldResemble, 1)
@@ -141,9 +142,9 @@ func TestDiscovery(t *testing.T) {
 		reg2.Hostname = "test2"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
-		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication)
-		ch, new, err := svr.Polls(context.TODO(), pollArg)
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication, reg.FromZone)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication, reg.FromZone)
+		ch, new, _, err := svr.Polls(context.TODO(), pollArg)
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
 		ins := <-ch
@@ -152,7 +153,7 @@ func TestDiscovery(t *testing.T) {
 		time.Sleep(time.Second)
 		err = svr.Cancel(context.TODO(), cancel)
 		So(err, ShouldBeNil)
-		ch, new, err = svr.Polls(context.TODO(), pollArg)
+		ch, new, _, err = svr.Polls(context.TODO(), pollArg)
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
 		ins = <-ch
@@ -168,8 +169,8 @@ func TestFetchs(t *testing.T) {
 		reg2.AppID = "appid2"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
-		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication, reg.FromZone)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg.Replication, reg.FromZone)
 		fetchs := newFetchArg()
 		fetchs.AppID = append(fetchs.AppID, "appid2")
 		is, err := svr.Fetchs(ctx, fetchs)
@@ -186,15 +187,15 @@ func TestZones(t *testing.T) {
 		reg2.Zone = "sh002"
 		i1 := model.NewInstance(reg)
 		i2 := model.NewInstance(reg2)
-		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication)
-		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg2.Replication)
-		ch, new, err := svr.Polls(context.TODO(), newPoll())
+		svr.Register(context.TODO(), i1, reg.LatestTimestamp, reg.Replication, reg.FromZone)
+		svr.Register(context.TODO(), i2, reg2.LatestTimestamp, reg2.Replication, reg2.FromZone)
+		ch, new, _, err := svr.Polls(context.TODO(), newPoll())
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
 		ins := <-ch
 		So(len(ins["main.arch.test"].Instances), ShouldEqual, 2)
 		pollArg.Zone = "sh002"
-		ch, new, err = svr.Polls(context.TODO(), newPoll())
+		ch, new, _, err = svr.Polls(context.TODO(), newPoll())
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
 		ins = <-ch
@@ -206,16 +207,16 @@ func TestZones(t *testing.T) {
 			reg3.Zone = "sh002"
 			reg3.Hostname = "test03"
 			i3 := model.NewInstance(reg3)
-			svr.Register(context.TODO(), i3, reg3.LatestTimestamp, reg3.Replication)
-			ch, _, err = svr.Polls(context.TODO(), pollArg)
+			svr.Register(context.TODO(), i3, reg3.LatestTimestamp, reg3.Replication, reg3.FromZone)
+			ch, _, _, err = svr.Polls(context.TODO(), pollArg)
 			So(err, ShouldBeNil)
 			ins = <-ch
 			So(len(ins["main.arch.test"].Instances), ShouldResemble, 2)
 			So(len(ins["main.arch.test"].Instances["sh002"]), ShouldResemble, 2)
 			So(len(ins["main.arch.test"].Instances["sh001"]), ShouldResemble, 1)
 			pollArg.LatestTimestamp = []int64{ins["main.arch.test"].LatestTimestamp}
-			_, _, err = svr.Polls(context.TODO(), pollArg)
-			So(err, ShouldResemble, errors.NotModified)
+			_, _, _, err = svr.Polls(context.TODO(), pollArg)
+			So(err, ShouldResemble, ecode.NotModified)
 		})
 	})
 }
@@ -225,20 +226,20 @@ func TestRenew(t *testing.T) {
 		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication, reg.FromZone)
 		_, err := svr.Renew(context.TODO(), rew)
 		So(err, ShouldBeNil)
 		rew2.AppID = "main.arch.noexist"
 		_, err = svr.Renew(context.TODO(), rew2)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 		rew2.AppID = "main.arch.test"
 		rew2.DirtyTimestamp = 1
 		rew2.Replication = true
 		_, err = svr.Renew(context.TODO(), rew2)
-		So(err, ShouldResemble, errors.Conflict)
+		So(err, ShouldResemble, ecode.Conflict)
 		rew2.DirtyTimestamp = time.Now().UnixNano()
 		_, err = svr.Renew(context.TODO(), rew2)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 	})
 }
 
@@ -248,13 +249,13 @@ func TestCancel(t *testing.T) {
 		defer disCancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication, reg.FromZone)
 		err := svr.Cancel(context.TODO(), cancel)
 		So(err, ShouldBeNil)
 		err = svr.Cancel(context.TODO(), cancel)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 		_, err = svr.Fetch(context.TODO(), fet)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 	})
 }
 
@@ -264,7 +265,7 @@ func TestFetchAll(t *testing.T) {
 		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
 		i := model.NewInstance(reg)
-		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication)
+		svr.Register(context.TODO(), i, reg.LatestTimestamp, reg.Replication, reg.FromZone)
 		fs := svr.FetchAll(context.TODO())[i.AppID]
 		So(len(fs), ShouldResemble, 1)
 	})
@@ -275,7 +276,7 @@ func TestNodes(t *testing.T) {
 		svr, cancel := New(config)
 		defer cancel()
 		svr.client.SetTransport(gock.DefaultTransport)
-		svr.Register(context.Background(), defRegDiscovery(), time.Now().UnixNano(), false)
+		svr.Register(context.Background(), defRegDiscovery(), time.Now().UnixNano(), false, true)
 		time.Sleep(time.Second)
 		ns := svr.Nodes(context.TODO())
 		So(len(ns), ShouldResemble, 2)

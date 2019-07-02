@@ -9,11 +9,10 @@ import (
 	"strings"
 
 	"github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
-	"github.com/bilibili/discovery/lib/http"
 	"github.com/bilibili/discovery/model"
-
-	log "github.com/golang/glog"
+	"github.com/bilibili/kratos/pkg/ecode"
+	log "github.com/bilibili/kratos/pkg/log"
+	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
 )
 
 const (
@@ -65,7 +64,7 @@ func newNode(c *conf.Config, addr string) (n *Node) {
 func (n *Node) Register(c context.Context, i *model.Instance) (err error) {
 	err = n.call(c, model.Register, i, n.registerURL, nil)
 	if err != nil {
-		log.Warningf("node be called(%s) register instance(%v) error(%v)", n.registerURL, i, err)
+		log.Warn("node be called(%s) register instance(%v) error(%v)", n.registerURL, i, err)
 	}
 	return
 }
@@ -74,7 +73,7 @@ func (n *Node) Register(c context.Context, i *model.Instance) (err error) {
 func (n *Node) Cancel(c context.Context, i *model.Instance) (err error) {
 	err = n.call(c, model.Cancel, i, n.cancelURL, nil)
 	if err != nil {
-		log.Warningf("node be called(%s) instance(%v) already canceled", n.cancelURL, i)
+		log.Warn("node be called(%s) instance(%v) already canceled", n.cancelURL, i)
 	}
 	return
 }
@@ -84,19 +83,19 @@ func (n *Node) Cancel(c context.Context, i *model.Instance) (err error) {
 func (n *Node) Renew(c context.Context, i *model.Instance) (err error) {
 	var res *model.Instance
 	err = n.call(c, model.Renew, i, n.renewURL, &res)
-	if err == errors.ServerErr {
-		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+	if err == ecode.ServerErr {
+		log.Warn("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
 		n.status = model.NodeStatusLost
 		return
 	}
 	n.status = model.NodeStatusUP
-	if err == errors.NothingFound {
-		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+	if err == ecode.NothingFound {
+		log.Warn("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
 		err = n.call(c, model.Register, i, n.registerURL, nil)
 		return
 	}
 	// NOTE: register response instance whitch in conflict with peer node
-	if err == errors.Conflict && res != nil {
+	if err == ecode.Conflict && res != nil {
 		err = n.call(c, model.Register, res, n.pRegisterURL, nil)
 	}
 	return
@@ -133,12 +132,12 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 		Data json.RawMessage `json:"data"`
 	}
 	if err = n.client.Post(c, uri, "", params, &res); err != nil {
-		log.Errorf("node be called(%s) instance(%v) error(%v)", uri, i, err)
+		log.Error("node be called(%s) instance(%v) error(%v)", uri, i, err)
 		return
 	}
 	if res.Code != 0 {
-		log.Errorf("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
-		if err = errors.Int(res.Code); err == errors.Conflict {
+		log.Error("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
+		if err = ecode.Int(res.Code); err == ecode.Conflict {
 			_ = json.Unmarshal([]byte(res.Data), data)
 		}
 	}

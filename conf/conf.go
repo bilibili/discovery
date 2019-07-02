@@ -5,9 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/bilibili/discovery/lib/http"
-
 	"github.com/BurntSushi/toml"
+	log "github.com/bilibili/kratos/pkg/log"
+	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
 )
 
 var (
@@ -27,9 +27,6 @@ func init() {
 		hostname = os.Getenv("HOSTNAME")
 	}
 	flag.StringVar(&confPath, "conf", "discovery-example.toml", "config path")
-	flag.StringVar(&region, "region", os.Getenv("REGION"), "avaliable region. or use REGION env variable, value: sh etc.")
-	flag.StringVar(&zone, "zone", os.Getenv("ZONE"), "avaliable zone. or use ZONE env variable, value: sh001/sh002 etc.")
-	flag.StringVar(&deployEnv, "deploy.env", os.Getenv("DEPLOY_ENV"), "deploy env. or use DEPLOY_ENV env variable, value: dev/fat1/uat/pre/prod etc.")
 	flag.StringVar(&hostname, "hostname", hostname, "machine hostname")
 	flag.StringVar(&schedulerPath, "scheduler", "scheduler.json", "scheduler info")
 }
@@ -38,9 +35,10 @@ func init() {
 type Config struct {
 	Nodes      []string
 	Zones      map[string][]string
-	HTTPServer *ServerConfig
+	HTTPServer *http.ServerConfig
 	HTTPClient *http.ClientConfig
 	Env        *Env
+	Log        *log.Config
 	Scheduler  []byte
 }
 
@@ -70,11 +68,6 @@ type Env struct {
 	Zone      string
 	Host      string
 	DeployEnv string
-}
-
-// ServerConfig Http Servers conf.
-type ServerConfig struct {
-	Addr string
 }
 
 // Init init conf

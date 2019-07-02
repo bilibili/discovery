@@ -5,9 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bilibili/discovery/errors"
-
-	log "github.com/golang/glog"
+	"github.com/bilibili/kratos/pkg/ecode"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 // InstanceStatus Status of instance
@@ -85,7 +84,7 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 	}
 	if arg.Metadata != "" {
 		if err := json.Unmarshal([]byte(arg.Metadata), &i.Metadata); err != nil {
-			log.Errorf("json unmarshal metadata err %v", err)
+			log.Error("json unmarshal metadata err %v", err)
 		}
 	}
 	return
@@ -161,7 +160,7 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 	p.lock.RLock()
 	defer p.lock.RUnlock()
 	if latestTime >= p.latestTimestamp {
-		err = errors.NotModified
+		err = ecode.NotModified
 		return
 	}
 	ci = &InstanceInfo{
@@ -186,9 +185,9 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 		}
 	}
 	if !ok {
-		err = errors.NothingFound
+		err = ecode.NothingFound
 	} else if len(ci.Instances) == 0 {
-		err = errors.NotModified
+		err = ecode.NotModified
 	}
 	return
 }
@@ -245,7 +244,7 @@ func (a *App) NewInstance(ni *Instance, latestTime int64) (i *Instance, ok bool)
 	if ok {
 		ni.UpTimestamp = oi.UpTimestamp
 		if ni.DirtyTimestamp < oi.DirtyTimestamp {
-			log.Warningf("register exist(%v) dirty timestamp over than caller(%v)", oi, ni)
+			log.Warn("register exist(%v) dirty timestamp over than caller(%v)", oi, ni)
 			ni = oi
 		}
 	}
@@ -317,12 +316,12 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 	}
 	for i, hostname := range changes.Hostname {
 		if dst, ok = a.instances[hostname]; !ok {
-			log.Errorf("SetWeight hostname(%s) not found", hostname)
+			log.Error("SetWeight hostname(%s) not found", hostname)
 			return
 		}
 		if len(changes.Status) != 0 {
 			if changes.Status[i] != InstanceStatusUP && changes.Status[i] != InstancestatusWating {
-				log.Errorf("SetWeight change status(%d) is error", changes.Status[i])
+				log.Error("SetWeight change status(%d) is error", changes.Status[i])
 				ok = false
 				return
 			}
@@ -333,7 +332,7 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 		}
 		if len(changes.Metadata) != 0 {
 			if err := json.Unmarshal([]byte(changes.Metadata[i]), &dst.Metadata); err != nil {
-				log.Errorf("set change metadata err %s", changes.Metadata[i])
+				log.Error("set change metadata err %s", changes.Metadata[i])
 				ok = false
 				return
 			}

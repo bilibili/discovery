@@ -14,6 +14,7 @@ type ArgRegister struct {
 	Replication     bool     `form:"replication"`
 	LatestTimestamp int64    `form:"latest_timestamp"`
 	DirtyTimestamp  int64    `form:"dirty_timestamp"`
+	FromZone        bool     `form:"from_zone"`
 }
 
 // ArgRenew define renew params.
@@ -24,6 +25,7 @@ type ArgRenew struct {
 	Hostname       string `form:"hostname" validate:"required"`
 	Replication    bool   `form:"replication"`
 	DirtyTimestamp int64  `form:"dirty_timestamp"`
+	FromZone       bool   `form:"from_zone"`
 }
 
 // ArgCancel define cancel params.
@@ -32,6 +34,7 @@ type ArgCancel struct {
 	Env             string `form:"env" validate:"required"`
 	AppID           string `form:"appid" validate:"required"`
 	Hostname        string `form:"hostname" validate:"required"`
+	FromZone        bool   `form:"from_zone"`
 	Replication     bool   `form:"replication"`
 	LatestTimestamp int64  `form:"latest_timestamp"`
 }
@@ -79,5 +82,6 @@ type ArgSet struct {
 	Status       []uint32 `form:"status" validate:"gte=0"`
 	Metadata     []string `form:"metadata" validate:"gte=0"`
 	Replication  bool     `form:"replication"`
+	FromZone     bool     `form:"from_zone"`
 	SetTimestamp int64    `form:"set_timestamp"`
 }

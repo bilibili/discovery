@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
 	"github.com/bilibili/discovery/model"
+	"github.com/bilibili/kratos/pkg/ecode"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -37,14 +37,14 @@ func TestDiscovery(t *testing.T) {
 		info, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
 		So(err, ShouldBeNil)
 		So(len(info.Instances["sh0001"]), ShouldEqual, 2)
-		ch, _, err := r.Polls(pollArg)
+		ch, _, _, err := r.Polls(pollArg)
 		So(err, ShouldBeNil)
 		apps := <-ch
 		So(len(apps["main.arch.test"].Instances["sh0001"]), ShouldEqual, 2)
 		pollArg.LatestTimestamp[0] = apps["main.arch.test"].LatestTimestamp
 		fmt.Println(apps["main.arch.test"])
 		r.Cancel(cancel)
-		ch, _, err = r.Polls(pollArg)
+		ch, _, _, err = r.Polls(pollArg)
 		So(err, ShouldBeNil)
 		apps = <-ch
 		So(len(apps["main.arch.test"].Instances), ShouldEqual, 1)
@@ -88,7 +88,7 @@ func TestCancel(t *testing.T) {
 		So(i, ShouldResemble, src)
 		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
 		_, err := r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 	})
 }
 
@@ -106,7 +106,7 @@ func BenchmarkCancel(b *testing.B) {
 			}
 			benchCompareInstance(b, src, i)
 			fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 3}
-			if _, err = r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status); err != errors.NothingFound {
+			if _, err = r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status); err != ecode.NothingFound {
 				b.Errorf("Fetch(%v) error(%v)", src.AppID, err)
 			}
 		}
@@ -170,7 +170,7 @@ func TestPoll(t *testing.T) {
 	r := register(t, i)
 	Convey("test poll", t, func() {
 		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", AppID: []string{"main.arch.test"}, Hostname: "csq"}
-		ch, _, err := r.Polls(pollArg)
+		ch, _, _, err := r.Polls(pollArg)
 		So(err, ShouldBeNil)
 		c := <-ch
 		So(len(c[pollArg.AppID[0]].Instances), ShouldEqual, 1)
@@ -183,7 +183,7 @@ func TestPolls(t *testing.T) {
 	r := register(t, i1, i2)
 	Convey("test polls", t, func() {
 		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", LatestTimestamp: []int64{0, 0}, AppID: []string{"main.arch.test", "main.arch.test2"}, Hostname: "csq"}
-		ch, new, err := r.Polls(pollArg)
+		ch, new, _, err := r.Polls(pollArg)
 		So(err, ShouldBeNil)
 		So(new, ShouldBeTrue)
 		c := <-ch
@@ -204,12 +204,12 @@ func TestPollsChan(t *testing.T) {
 			err      error
 		)
 		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", LatestTimestamp: []int64{time.Now().UnixNano(), time.Now().UnixNano()}, AppID: []string{"main.arch.test", "main.arch.test2"}, Hostname: "csq"}
-		ch1, new, err = r.Polls(pollArg)
-		c.So(err, ShouldEqual, errors.NotModified)
+		ch1, new, _, err = r.Polls(pollArg)
+		c.So(err, ShouldEqual, ecode.NotModified)
 		c.So(new, ShouldBeFalse)
 		c.So(ch1, ShouldNotBeNil)
-		ch2, new, err = r.Polls(pollArg)
-		c.So(err, ShouldEqual, errors.NotModified)
+		ch2, new, _, err = r.Polls(pollArg)
+		c.So(err, ShouldEqual, ecode.NotModified)
 		c.So(new, ShouldBeFalse)
 		c.So(ch2, ShouldNotBeNil)
 		// wait group
@@ -243,7 +243,7 @@ func BenchmarkPoll(b *testing.B) {
 			)
 			r, _ := benchRegister(b)
 			pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", AppID: []string{"main.arch.test"}, Hostname: "csq"}
-			if ch, _, err = r.Polls(pollArg); err != nil {
+			if ch, _, _, err = r.Polls(pollArg); err != nil {
 				b.Errorf("Poll(%v) error(%v)", arg.AppID, err)
 			}
 			if c = <-ch; len(c[pollArg.AppID[0]].Instances) != 1 {
@@ -267,8 +267,8 @@ func TestBroadcast(t *testing.T) {
 			})
 		}()
 		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", AppID: []string{"main.arch.test"}, LatestTimestamp: []int64{time.Now().UnixNano()}}
-		ch, _, err := r.Polls(pollArg)
-		So(err, ShouldResemble, errors.NotModified)
+		ch, _, _, err := r.Polls(pollArg)
+		So(err, ShouldResemble, ecode.NotModified)
 		c := <-ch
 		So(len(c[pollArg.AppID[0]].Instances["sh0001"]), ShouldResemble, 2)
 		So(c[pollArg.AppID[0]].Instances, ShouldNotBeNil)
@@ -294,7 +294,7 @@ func BenchmarkBroadcast(b *testing.B) {
 			}
 		}()
 		pollArg := &model.ArgPolls{Zone: "sh0001", Env: "pre", AppID: []string{"main.arch.test"}, LatestTimestamp: []int64{time.Now().UnixNano()}}
-		if ch, _, err = r.Polls(pollArg); err != nil && err != errors.NotModified {
+		if ch, _, _, err = r.Polls(pollArg); err != nil && err != ecode.NotModified {
 			b.Errorf("Poll(%v) error(%v)", pollArg.AppID, err)
 		}
 		c = <-ch
@@ -463,6 +463,6 @@ func TestEvict2(t *testing.T) {
 		r.evict()
 		fetchArg := &model.ArgFetch{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Status: 1}
 		_, err = r.Fetch(fetchArg.Zone, fetchArg.Env, fetchArg.AppID, 0, fetchArg.Status)
-		So(err, ShouldResemble, errors.NothingFound)
+		So(err, ShouldResemble, ecode.NothingFound)
 	})
 }
