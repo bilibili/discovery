@@ -47,7 +47,8 @@ func innerRouter(e *bm.Engine) {
 
 func initProtect(ctx *bm.Context) {
 	if dis.Protected() {
-		ctx.JSON(nil, errProtected)
-		ctx.AbortWithStatus(503)
+		ctx.JSONMap(map[string]interface{}{
+			"message": errProtected.Error(),
+		}, errProtected)
 	}
 }

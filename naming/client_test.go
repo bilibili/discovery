@@ -37,7 +37,7 @@ func mockDiscoverySvr() {
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &xhttp.ServerConfig{
 			Addr:    "127.0.0.1:7171",
-			Timeout: xtime.Duration(time.Second * 1),
+			Timeout: xtime.Duration(time.Second * 31),
 		},
 		HTTPClient: &xhttp.ClientConfig{
 			Timeout:   xtime.Duration(time.Second * 40),
@@ -59,7 +59,6 @@ func TestDiscovery(t *testing.T) {
 		Host:   "test-host",
 	}
 	dis := New(conf)
-	println("new")
 	appid := "test1"
 	Convey("test discovery register", t, func() {
 		instance := &Instance{

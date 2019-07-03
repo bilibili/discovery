@@ -74,7 +74,6 @@ func fetch(c *bm.Context) {
 func fetchs(c *bm.Context) {
 	arg := new(model.ArgFetchs)
 	if err := c.Bind(arg); err != nil {
-
 		return
 	}
 	c.JSON(dis.Fetchs(c, arg))

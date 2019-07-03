@@ -109,10 +109,12 @@ func (n *Node) Set(c context.Context, arg *model.ArgSet) (err error) {
 }
 func (n *Node) call(c context.Context, action model.Action, i *model.Instance, uri string, data interface{}) (err error) {
 	params := url.Values{}
+	params.Set("region", i.Region)
 	params.Set("zone", i.Zone)
 	params.Set("env", i.Env)
 	params.Set("appid", i.AppID)
 	params.Set("hostname", i.Hostname)
+	params.Set("from_zone", "true")
 	if n.otherZone {
 		params.Set("replication", "false")
 	} else {
@@ -141,7 +143,6 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 		log.Error("node be called(%s) instance(%v) error(%v)", uri, i, err)
 		return
 	}
-	fmt.Println(res)
 	if res.Code != 0 {
 		log.Error("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
 		if err = ecode.Int(res.Code); err == ecode.Conflict {

@@ -33,13 +33,14 @@ func init() {
 
 // Config config.
 type Config struct {
-	Nodes      []string
-	Zones      map[string][]string
-	HTTPServer *http.ServerConfig
-	HTTPClient *http.ClientConfig
-	Env        *Env
-	Log        *log.Config
-	Scheduler  []byte
+	Nodes         []string
+	Zones         map[string][]string
+	HTTPServer    *http.ServerConfig
+	HTTPClient    *http.ClientConfig
+	Env           *Env
+	Log           *log.Config
+	Scheduler     []byte
+	EnableProtect bool
 }
 
 // Fix fix env config.
