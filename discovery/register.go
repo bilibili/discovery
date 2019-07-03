@@ -96,5 +96,8 @@ func (d *Discovery) Set(c context.Context, arg *model.ArgSet) (err error) {
 	if !d.registry.Set(arg) {
 		err = ecode.RequestErr
 	}
+	if !arg.Replication {
+		d.nodes.Load().(*registry.Nodes).ReplicateSet(c, arg, arg.FromZone)
+	}
 	return
 }

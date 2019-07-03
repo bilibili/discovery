@@ -1,4 +1,9 @@
 #### Discovery
+##### Version 1.1.0
+> 1. use kratos pkg
+> 2. replace gin by kratos/bm
+> 3. fix poll return nil when been canceled.
+
 ##### Version 1.0.2
 > 1.fix nodesproc. get all zone nodes.
 

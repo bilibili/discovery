@@ -27,7 +27,7 @@ var (
 	set    = &model.ArgSet{AppID: "main.arch.test",
 		Zone: "sh001", Env: "pre",
 		Hostname: []string{"test1"},
-		Status:   []uint32{1},
+		Status:   []int64{1},
 	}
 	pollArg = newPoll()
 )

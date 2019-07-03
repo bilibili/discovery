@@ -13,6 +13,7 @@ import (
 	"github.com/bilibili/kratos/pkg/ecode"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	xstr "github.com/bilibili/kratos/pkg/str"
 )
 
 const (
@@ -101,6 +102,11 @@ func (n *Node) Renew(c context.Context, i *model.Instance) (err error) {
 	return
 }
 
+// Set the infomation of instance by this node to the peer node represented
+func (n *Node) Set(c context.Context, arg *model.ArgSet) (err error) {
+	err = n.setCall(c, arg, n.setURL)
+	return
+}
 func (n *Node) call(c context.Context, action model.Action, i *model.Instance, uri string, data interface{}) (err error) {
 	params := url.Values{}
 	params.Set("zone", i.Zone)
@@ -135,11 +141,43 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 		log.Error("node be called(%s) instance(%v) error(%v)", uri, i, err)
 		return
 	}
+	fmt.Println(res)
 	if res.Code != 0 {
 		log.Error("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
 		if err = ecode.Int(res.Code); err == ecode.Conflict {
 			_ = json.Unmarshal([]byte(res.Data), data)
 		}
+	}
+	return
+}
+
+func (n *Node) setCall(c context.Context, arg *model.ArgSet, uri string) (err error) {
+	params := url.Values{}
+	params.Set("region", arg.Region)
+	params.Set("zone", arg.Zone)
+	params.Set("env", arg.Env)
+	params.Set("appid", arg.AppID)
+	params.Set("hostname", strings.Join(arg.Hostname, ","))
+	params.Set("set_timestamp", strconv.FormatInt(arg.SetTimestamp, 10))
+	params.Set("replication", "true")
+	if len(arg.Status) != 0 {
+		params.Set("status", xstr.JoinInts(arg.Status))
+	}
+	if len(arg.Metadata) != 0 {
+		for _, metadata := range arg.Metadata {
+			params.Add("metadata", metadata)
+		}
+	}
+	var res struct {
+		Code int `json:"code"`
+	}
+	if err = n.client.Post(c, uri, "", params, &res); err != nil {
+		log.Error("node be setCalled(%s) appid(%s) env (%s) error(%v)", uri, arg.AppID, arg.Env, err)
+		return
+	}
+	if res.Code != 0 {
+		log.Error("node be setCalled(%s) appid(%s) env (%s) responce code(%v)", uri, arg.AppID, arg.Env, res.Code)
+		err = ecode.Int(res.Code)
 	}
 	return
 }

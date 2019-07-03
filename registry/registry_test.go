@@ -315,7 +315,7 @@ func TestSet(t *testing.T) {
 	r := register(t, i)
 	changes := &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 	changes.Hostname = []string{"reg"}
-	changes.Status = []uint32{1}
+	changes.Status = []int64{1}
 	Convey("test setstatus to 1", t, func() {
 		ok := r.Set(changes)
 		So(ok, ShouldBeTrue)
@@ -369,7 +369,8 @@ func BenchmarkSet(b *testing.B) {
 			r, _ := benchRegister(b)
 			changes := &model.ArgSet{Zone: "sh0001", Env: "pre", AppID: "main.arch.test"}
 			changes.Hostname = []string{"reg"}
-			changes.Status = []uint32{1}
+			changes.Status = []int64{1}
+
 			if ok = r.Set(changes); !ok {
 				b.Errorf("SetStatus(%v) error", arg.AppID)
 			}

@@ -320,12 +320,12 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 			return
 		}
 		if len(changes.Status) != 0 {
-			if changes.Status[i] != InstanceStatusUP && changes.Status[i] != InstancestatusWating {
+			if uint32(changes.Status[i]) != InstanceStatusUP && uint32(changes.Status[i]) != InstancestatusWating {
 				log.Error("SetWeight change status(%d) is error", changes.Status[i])
 				ok = false
 				return
 			}
-			dst.Status = changes.Status[i]
+			dst.Status = uint32(changes.Status[i])
 			if dst.Status == InstanceStatusUP {
 				dst.UpTimestamp = setTime
 			}

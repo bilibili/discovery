@@ -75,11 +75,12 @@ type ArgPolls struct {
 
 // ArgSet define set param.
 type ArgSet struct {
+	Region       string   `form:"region"`
 	Zone         string   `form:"zone" validate:"required"`
 	Env          string   `form:"env" validate:"required"`
 	AppID        string   `form:"appid" validate:"required"`
-	Hostname     []string `form:"hostname" validate:"gte=0"`
-	Status       []uint32 `form:"status" validate:"gte=0"`
+	Hostname     []string `form:"hostname,split" validate:"gte=0"`
+	Status       []int64  `form:"status,split" validate:"gte=0"`
 	Metadata     []string `form:"metadata" validate:"gte=0"`
 	Replication  bool     `form:"replication"`
 	FromZone     bool     `form:"from_zone"`
