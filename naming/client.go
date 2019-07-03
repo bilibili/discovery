@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -17,6 +16,7 @@ import (
 	ecode "github.com/bilibili/kratos/pkg/ecode"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	xstr "github.com/bilibili/kratos/pkg/str"
 	xtime "github.com/bilibili/kratos/pkg/time"
 )
 
@@ -541,12 +541,8 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]*InstancesInfo, 
 	params := url.Values{}
 	params.Set("env", c.Env)
 	params.Set("hostname", c.Host)
-	for _, appid := range appIDs {
-		params.Add("appid", appid)
-	}
-	for _, ts := range lastTss {
-		params.Add("latest_timestamp", strconv.FormatInt(ts, 10))
-	}
+	params.Set("appid", strings.Join(appIDs, ","))
+	params.Set("latest_timestamp", xstr.JoinInts(lastTss))
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
 		d.switchNode()
 		log.Error("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)

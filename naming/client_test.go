@@ -37,12 +37,12 @@ func mockDiscoverySvr() {
 		Nodes: []string{"127.0.0.1:7171"},
 		HTTPServer: &xhttp.ServerConfig{
 			Addr:    "127.0.0.1:7171",
-			Timeout: xtime.Duration(time.Second * 31),
+			Timeout: xtime.Duration(time.Second * 1),
 		},
 		HTTPClient: &xhttp.ClientConfig{
-			Timeout:   xtime.Duration(time.Second * 40),
+			Timeout:   xtime.Duration(time.Second * 1),
 			Dial:      xtime.Duration(time.Second),
-			KeepAlive: xtime.Duration(time.Second * 30),
+			KeepAlive: xtime.Duration(time.Second * 1),
 		},
 	}
 	_ = c.Fix()
