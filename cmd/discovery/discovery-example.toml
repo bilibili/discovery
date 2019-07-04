@@ -1,7 +1,7 @@
 
 # 同一discovery集群的所有node节点地址，包含本node
 nodes = ["127.0.0.1:7171"]
-
+enableprotect=false
 # 本可用区zone(一般指机房)标识
 [env]
 region = "sh"
@@ -19,6 +19,7 @@ DeployEnv = "dev"
 # 注意：ip别配置为0.0.0.0或者127.0.0.1
 [httpServer]
 addr = "127.0.0.1:7171"
+timeout="40s"
 
 # 当前节点同步其他节点使用的http client
 # dial 连接建立超时时间
@@ -26,3 +27,4 @@ addr = "127.0.0.1:7171"
 [httpClient]
 dial = "1s"
 keepAlive = "120s"
+timeout="40s"

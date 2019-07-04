@@ -3,18 +3,18 @@ package discovery
 import (
 	"context"
 
-	"github.com/bilibili/discovery/errors"
 	"github.com/bilibili/discovery/model"
 	"github.com/bilibili/discovery/registry"
+	"github.com/bilibili/kratos/pkg/ecode"
 
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 // Register a new instance.
-func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimestamp int64, replication bool) {
+func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimestamp int64, replication bool, fromzone bool) {
 	_ = d.registry.Register(ins, latestTimestamp)
 	if !replication {
-		_ = d.nodes.Load().(*registry.Nodes).Replicate(c, model.Register, ins, ins.Zone != d.c.Env.Zone)
+		_ = d.nodes.Load().(*registry.Nodes).Replicate(c, model.Register, ins, fromzone)
 	}
 }
 
@@ -22,8 +22,8 @@ func (d *Discovery) Register(c context.Context, ins *model.Instance, latestTimes
 func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Instance, err error) {
 	i, ok := d.registry.Renew(arg)
 	if !ok {
-		err = errors.NothingFound
-		log.Errorf("renew appid(%s) hostname(%s) zone(%s) env(%s) error", arg.AppID, arg.Hostname, arg.Zone, arg.Env)
+		err = ecode.NothingFound
+		log.Error("renew appid(%s) hostname(%s) zone(%s) env(%s) error", arg.AppID, arg.Hostname, arg.Zone, arg.Env)
 		return
 	}
 	if !arg.Replication {
@@ -31,9 +31,9 @@ func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Inst
 		return
 	}
 	if arg.DirtyTimestamp > i.DirtyTimestamp {
-		err = errors.NothingFound
+		err = ecode.NothingFound
 	} else if arg.DirtyTimestamp < i.DirtyTimestamp {
-		err = errors.Conflict
+		err = ecode.Conflict
 	}
 	return
 }
@@ -42,8 +42,8 @@ func (d *Discovery) Renew(c context.Context, arg *model.ArgRenew) (i *model.Inst
 func (d *Discovery) Cancel(c context.Context, arg *model.ArgCancel) (err error) {
 	i, ok := d.registry.Cancel(arg)
 	if !ok {
-		err = errors.NothingFound
-		log.Errorf("cancel appid(%s) hostname(%s) error", arg.AppID, arg.Hostname)
+		err = ecode.NothingFound
+		log.Error("cancel appid(%s) hostname(%s) error", arg.AppID, arg.Hostname)
 		return
 	}
 	if !arg.Replication {
@@ -68,7 +68,7 @@ func (d *Discovery) Fetchs(c context.Context, arg *model.ArgFetchs) (is map[stri
 	for _, appid := range arg.AppID {
 		i, err := d.registry.Fetch(arg.Zone, arg.Env, appid, 0, arg.Status)
 		if err != nil {
-			log.Errorf("Fetchs fetch appid(%v) err", err)
+			log.Error("Fetchs fetch appid(%v) err", err)
 			continue
 		}
 		is[appid] = i
@@ -77,7 +77,7 @@ func (d *Discovery) Fetchs(c context.Context, arg *model.ArgFetchs) (is map[stri
 }
 
 // Polls hangs request and then write instances when that has changes, or return NotModified.
-func (d *Discovery) Polls(c context.Context, arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, err error) {
+func (d *Discovery) Polls(c context.Context, arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, miss string, err error) {
 	return d.registry.Polls(arg)
 }
 
@@ -94,7 +94,10 @@ func (d *Discovery) Nodes(c context.Context) (nsi []*model.Node) {
 // Set set metadata,color,status of instance.
 func (d *Discovery) Set(c context.Context, arg *model.ArgSet) (err error) {
 	if !d.registry.Set(arg) {
-		err = errors.ParamsErr
+		err = ecode.RequestErr
+	}
+	if !arg.Replication {
+		d.nodes.Load().(*registry.Nodes).ReplicateSet(c, arg, arg.FromZone)
 	}
 	return
 }

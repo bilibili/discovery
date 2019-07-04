@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
 	"github.com/bilibili/discovery/model"
 
-	log "github.com/golang/glog"
+	"github.com/bilibili/kratos/pkg/ecode"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 const (
@@ -164,7 +164,7 @@ func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint3
 	a, ok := r.appm[key]
 	r.aLock.RUnlock()
 	if !ok {
-		err = errors.NothingFound
+		err = ecode.NothingFound
 		return
 	}
 	info, err = a.InstanceInfo(zone, latestTime, status)
@@ -179,7 +179,7 @@ func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint3
 }
 
 // Polls hangs request and then write instances when that has changes, or return NotModified.
-func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, err error) {
+func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, miss string, err error) {
 	var (
 		ins = make(map[string]*model.InstanceInfo, len(arg.AppID))
 		in  *model.InstanceInfo
@@ -189,8 +189,9 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 	}
 	for i := range arg.AppID {
 		in, err = r.Fetch(arg.Zone, arg.Env, arg.AppID[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
-		if err == errors.NothingFound {
-			log.Errorf("Polls zone(%s) env(%s) appid(%s) error(%v)", arg.Zone, arg.Env, arg.AppID[i], err)
+		if err == ecode.NothingFound {
+			miss = arg.AppID[i]
+			log.Error("Polls zone(%s) env(%s) appid(%s) error(%v)", arg.Zone, arg.Env, arg.AppID[i], err)
 			return
 		}
 		if err == nil {
@@ -215,13 +216,13 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 				ch = make(chan map[string]*model.InstanceInfo, 5) // NOTE: there maybe have more than one connection on the same hostname!!!
 			}
 			connection = newConn(ch, arg.LatestTimestamp[i], arg)
-			log.Infof("Polls from(%s) new connection(%d)", arg.Hostname, connection.count)
+			log.Info("Polls from(%s) new connection(%d)", arg.Hostname, connection.count)
 		} else {
 			connection.count++ // NOTE: there maybe have more than one connection on the same hostname!!!
 			if ch == nil {
 				ch = connection.ch
 			}
-			log.Infof("Polls from(%s) reuse connection(%d)", arg.Hostname, connection.count)
+			log.Info("Polls from(%s) reuse connection(%d)", arg.Hostname, connection.count)
 		}
 		r.conns[k][arg.Hostname] = connection
 	}
@@ -241,13 +242,18 @@ func (r *Registry) broadcast(env, appid string) {
 	}
 	delete(r.conns, key)
 	for _, conn := range conns {
-		ii, _ := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
+		ii, err := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
+		if err != nil {
+			// may be not found ,just continue until next poll return err.
+			log.Error("get appid:%s env:%s zone:%s err:%v", appid, env, conn.arg.Zone, err)
+			continue
+		}
 		for i := 0; i < conn.count; i++ {
 			select {
 			case conn.ch <- map[string]*model.InstanceInfo{appid: ii}: // NOTE: if chan is full, means no poller.
-				log.Infof("broadcast to(%s) success(%d)", conn.arg.Hostname, i+1)
+				log.Info("broadcast to(%s) success(%d)", conn.arg.Hostname, i+1)
 			case <-time.After(time.Millisecond * 500):
-				log.Infof("broadcast to(%s) failed(%d) maybe chan full", conn.arg.Hostname, i+1)
+				log.Info("broadcast to(%s) failed(%d) maybe chan full", conn.arg.Hostname, i+1)
 			}
 		}
 	}
@@ -353,15 +359,15 @@ func (r *Registry) DelConns(arg *model.ArgPolls) {
 		k := pollKey(arg.Env, arg.AppID[i])
 		conns, ok := r.conns[k]
 		if !ok {
-			log.Warningf("DelConn key(%s) not found", k)
+			log.Warn("DelConn key(%s) not found", k)
 			continue
 		}
 		if connection, ok := conns[arg.Hostname]; ok {
 			if connection.count > 1 {
-				log.Infof("DelConns from(%s) count decr(%d)", arg.Hostname, connection.count)
+				log.Info("DelConns from(%s) count decr(%d)", arg.Hostname, connection.count)
 				connection.count--
 			} else {
-				log.Infof("DelConns from(%s) delete(%d)", arg.Hostname, connection.count)
+				log.Info("DelConns from(%s) delete(%d)", arg.Hostname, connection.count)
 				delete(conns, arg.Hostname)
 			}
 		}

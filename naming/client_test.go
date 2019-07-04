@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	xhttp "github.com/bilibili/discovery/lib/http"
-	xtime "github.com/bilibili/discovery/lib/time"
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
 
+	xhttp "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	xtime "github.com/bilibili/kratos/pkg/time"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -35,12 +35,14 @@ func mockDiscoverySvr() {
 			Host:      "test_server",
 		},
 		Nodes: []string{"127.0.0.1:7171"},
-		HTTPServer: &conf.ServerConfig{
-			Addr: "127.0.0.1:7171",
+		HTTPServer: &xhttp.ServerConfig{
+			Addr:    "127.0.0.1:7171",
+			Timeout: xtime.Duration(time.Second * 1),
 		},
 		HTTPClient: &xhttp.ClientConfig{
+			Timeout:   xtime.Duration(time.Second * 1),
 			Dial:      xtime.Duration(time.Second),
-			KeepAlive: xtime.Duration(time.Second * 30),
+			KeepAlive: xtime.Duration(time.Second * 1),
 		},
 	}
 	_ = c.Fix()
@@ -57,7 +59,6 @@ func TestDiscovery(t *testing.T) {
 		Host:   "test-host",
 	}
 	dis := New(conf)
-	println("new")
 	appid := "test1"
 	Convey("test discovery register", t, func() {
 		instance := &Instance{
@@ -65,6 +66,7 @@ func TestDiscovery(t *testing.T) {
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
+			Addrs:    []string{"http://127.0.0.1:8000"},
 			Hostname: "test-host",
 		}
 		_, err := dis.Register(instance)
@@ -115,6 +117,7 @@ func TestDiscovery(t *testing.T) {
 			Zone:     "test",
 			Env:      "test",
 			AppID:    appid,
+			Addrs:    []string{"http://127.0.0.1:8000"},
 			Hostname: "test-host2",
 		}
 		err := addNewInstance(instance2)
@@ -136,6 +139,7 @@ func TestDiscovery(t *testing.T) {
 
 func addNewInstance(ins *Instance) error {
 	cli := xhttp.NewClient(&xhttp.ClientConfig{
+		Timeout:   xtime.Duration(time.Second * 30),
 		Dial:      xtime.Duration(time.Second),
 		KeepAlive: xtime.Duration(time.Second * 30),
 	})

@@ -7,16 +7,23 @@ import (
 	"time"
 
 	"github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
 	"github.com/bilibili/discovery/model"
 	"github.com/bilibili/discovery/registry"
+	"github.com/bilibili/kratos/pkg/ecode"
 
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 var (
 	_fetchAllURL = "http://%s/discovery/fetch/all"
 )
+
+// Protected return if service in init protect mode.
+// if service in init protect mode,only support write,
+// read operator isn't supported.
+func (d *Discovery) Protected() bool {
+	return d.protected
+}
 
 // syncUp populates the registry information from a peer eureka node.
 func (d *Discovery) syncUp() {
@@ -31,11 +38,11 @@ func (d *Discovery) syncUp() {
 			Data map[string][]*model.Instance `json:"data"`
 		}
 		if err := d.client.Get(context.TODO(), uri, "", nil, &res); err != nil {
-			log.Errorf("d.client.Get(%v) error(%v)", uri, err)
+			log.Error("d.client.Get(%v) error(%v)", uri, err)
 			continue
 		}
 		if res.Code != 0 {
-			log.Errorf("service syncup from(%s) failed ", uri)
+			log.Error("service syncup from(%s) failed ", uri)
 			continue
 		}
 		for _, is := range res.Data {
@@ -67,7 +74,7 @@ func (d *Discovery) regSelf() context.CancelFunc {
 		RenewTimestamp:  now,
 		DirtyTimestamp:  now,
 	}
-	d.Register(ctx, ins, now, false)
+	d.Register(ctx, ins, now, false, false)
 	go func() {
 		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
@@ -80,8 +87,8 @@ func (d *Discovery) regSelf() context.CancelFunc {
 					Env:      d.c.Env.DeployEnv,
 					Hostname: d.c.Env.Host,
 				}
-				if _, err := d.Renew(ctx, arg); err != nil && err == errors.NothingFound {
-					d.Register(ctx, ins, now, false)
+				if _, err := d.Renew(ctx, arg); err != nil && err == ecode.NothingFound {
+					d.Register(ctx, ins, now, false, false)
 				}
 			case <-ctx.Done():
 				arg := &model.ArgCancel{
@@ -91,7 +98,7 @@ func (d *Discovery) regSelf() context.CancelFunc {
 					Hostname: d.c.Env.Host,
 				}
 				if err := d.Cancel(context.Background(), arg); err != nil {
-					log.Errorf("d.Cancel(%+v) error(%v)", arg, err)
+					log.Error("d.Cancel(%+v) error(%v)", arg, err)
 				}
 				return
 			}
@@ -111,9 +118,9 @@ func (d *Discovery) nodesproc() {
 			Hostname:        d.c.Env.Host,
 			LatestTimestamp: []int64{lastTs},
 		}
-		ch, _, err := d.registry.Polls(arg)
-		if err != nil && err != errors.NotModified {
-			log.Errorf("d.registry(%v) error(%v)", arg, err)
+		ch, _, _, err := d.registry.Polls(arg)
+		if err != nil && err != ecode.NotModified {
+			log.Error("d.registry(%v) error(%v)", arg, err)
 			time.Sleep(time.Second)
 			continue
 		}
@@ -148,6 +155,6 @@ func (d *Discovery) nodesproc() {
 		ns := registry.NewNodes(c)
 		ns.UP()
 		d.nodes.Store(ns)
-		log.Infof("discovery changed nodes:%v zones:%v", nodes, zones)
+		log.Info("discovery changed nodes:%v zones:%v", nodes, zones)
 	}
 }

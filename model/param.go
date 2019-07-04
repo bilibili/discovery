@@ -8,12 +8,13 @@ type ArgRegister struct {
 	AppID           string   `form:"appid" validate:"required"`
 	Hostname        string   `form:"hostname" validate:"required"`
 	Status          uint32   `form:"status" validate:"required"`
-	Addrs           []string `form:"addrs" validate:"gt=0"`
+	Addrs           []string `form:"addrs,split" validate:"gt=0"`
 	Version         string   `form:"version"`
 	Metadata        string   `form:"metadata"`
 	Replication     bool     `form:"replication"`
 	LatestTimestamp int64    `form:"latest_timestamp"`
 	DirtyTimestamp  int64    `form:"dirty_timestamp"`
+	FromZone        bool     `form:"from_zone"`
 }
 
 // ArgRenew define renew params.
@@ -24,6 +25,7 @@ type ArgRenew struct {
 	Hostname       string `form:"hostname" validate:"required"`
 	Replication    bool   `form:"replication"`
 	DirtyTimestamp int64  `form:"dirty_timestamp"`
+	FromZone       bool   `form:"from_zone"`
 }
 
 // ArgCancel define cancel params.
@@ -32,6 +34,7 @@ type ArgCancel struct {
 	Env             string `form:"env" validate:"required"`
 	AppID           string `form:"appid" validate:"required"`
 	Hostname        string `form:"hostname" validate:"required"`
+	FromZone        bool   `form:"from_zone"`
 	Replication     bool   `form:"replication"`
 	LatestTimestamp int64  `form:"latest_timestamp"`
 }
@@ -48,7 +51,7 @@ type ArgFetch struct {
 type ArgFetchs struct {
 	Zone   string   `form:"zone"`
 	Env    string   `form:"env" validate:"required"`
-	AppID  []string `form:"appid" validate:"gt=0"`
+	AppID  []string `form:"appid,split" validate:"gt=0"`
 	Status uint32   `form:"status" validate:"required"`
 }
 
@@ -65,19 +68,21 @@ type ArgPoll struct {
 type ArgPolls struct {
 	Zone            string   `form:"zone"`
 	Env             string   `form:"env" validate:"required"`
-	AppID           []string `form:"appid" validate:"gt=0"`
+	AppID           []string `form:"appid,split" validate:"gt=0"`
 	Hostname        string   `form:"hostname" validate:"required"`
-	LatestTimestamp []int64  `form:"latest_timestamp"`
+	LatestTimestamp []int64  `form:"latest_timestamp,split"`
 }
 
 // ArgSet define set param.
 type ArgSet struct {
+	Region       string   `form:"region"`
 	Zone         string   `form:"zone" validate:"required"`
 	Env          string   `form:"env" validate:"required"`
 	AppID        string   `form:"appid" validate:"required"`
-	Hostname     []string `form:"hostname" validate:"gte=0"`
-	Status       []uint32 `form:"status" validate:"gte=0"`
-	Metadata     []string `form:"metadata" validate:"gte=0"`
+	Hostname     []string `form:"hostname,split" validate:"gte=0"`
+	Status       []int64  `form:"status,split" validate:"gte=0"`
+	Metadata     []string `form:"metadata" validate:"gte=0"` // metadata may contain `,` , use metadata=xx&metadata=xx instead of split by ','
 	Replication  bool     `form:"replication"`
+	FromZone     bool     `form:"from_zone"`
 	SetTimestamp int64    `form:"set_timestamp"`
 }

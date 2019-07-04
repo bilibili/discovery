@@ -9,7 +9,7 @@ import (
 
 	"github.com/bilibili/discovery/naming"
 
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 	"google.golang.org/grpc/resolver"
 )
 
@@ -134,7 +134,7 @@ func (r *Resolver) newAddress(instances []*naming.Instance) {
 		}
 		rpcAddr, color, weight := extractAddrs(ins)
 		if rpcAddr == "" {
-			log.Warningf("grpc resolver: invalid rpc address(%s,%s,%v) found!", ins.AppID, ins.Hostname, ins.Addrs)
+			log.Warn("grpc resolver: invalid rpc address(%s,%s,%v) found!", ins.AppID, ins.Hostname, ins.Addrs)
 			continue
 		}
 		if weight <= 0 {

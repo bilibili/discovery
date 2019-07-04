@@ -10,16 +10,16 @@ import (
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
-
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 func main() {
 	flag.Parse()
 	if err := conf.Init(); err != nil {
-		log.Errorf("conf.Init() error(%v)", err)
+		log.Error("conf.Init() error(%v)", err)
 		panic(err)
 	}
+	log.Init(conf.Conf.Log)
 	dis, cancel := discovery.New(conf.Conf)
 	http.Init(conf.Conf, dis)
 	// init signal
@@ -27,13 +27,12 @@ func main() {
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-c
-		log.Infof("discovery get a signal %s", s.String())
+		log.Info("discovery get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			cancel()
 			time.Sleep(time.Second)
 			log.Info("discovery quit !!!")
-			log.Flush()
 			return
 		case syscall.SIGHUP:
 		default:

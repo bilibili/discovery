@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/bilibili/discovery/conf"
-	"github.com/bilibili/discovery/errors"
-	"github.com/bilibili/discovery/lib/http"
 	"github.com/bilibili/discovery/model"
-
-	log "github.com/golang/glog"
+	"github.com/bilibili/kratos/pkg/ecode"
+	log "github.com/bilibili/kratos/pkg/log"
+	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	xstr "github.com/bilibili/kratos/pkg/str"
 )
 
 const (
@@ -65,7 +65,7 @@ func newNode(c *conf.Config, addr string) (n *Node) {
 func (n *Node) Register(c context.Context, i *model.Instance) (err error) {
 	err = n.call(c, model.Register, i, n.registerURL, nil)
 	if err != nil {
-		log.Warningf("node be called(%s) register instance(%v) error(%v)", n.registerURL, i, err)
+		log.Warn("node be called(%s) register instance(%v) error(%v)", n.registerURL, i, err)
 	}
 	return
 }
@@ -74,7 +74,7 @@ func (n *Node) Register(c context.Context, i *model.Instance) (err error) {
 func (n *Node) Cancel(c context.Context, i *model.Instance) (err error) {
 	err = n.call(c, model.Cancel, i, n.cancelURL, nil)
 	if err != nil {
-		log.Warningf("node be called(%s) instance(%v) already canceled", n.cancelURL, i)
+		log.Warn("node be called(%s) instance(%v) already canceled", n.cancelURL, i)
 	}
 	return
 }
@@ -84,30 +84,37 @@ func (n *Node) Cancel(c context.Context, i *model.Instance) (err error) {
 func (n *Node) Renew(c context.Context, i *model.Instance) (err error) {
 	var res *model.Instance
 	err = n.call(c, model.Renew, i, n.renewURL, &res)
-	if err == errors.ServerErr {
-		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+	if err == ecode.ServerErr {
+		log.Warn("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
 		n.status = model.NodeStatusLost
 		return
 	}
 	n.status = model.NodeStatusUP
-	if err == errors.NothingFound {
-		log.Warningf("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
+	if err == ecode.NothingFound {
+		log.Warn("node be called(%s) instance(%v) error(%v)", n.renewURL, i, err)
 		err = n.call(c, model.Register, i, n.registerURL, nil)
 		return
 	}
 	// NOTE: register response instance whitch in conflict with peer node
-	if err == errors.Conflict && res != nil {
+	if err == ecode.Conflict && res != nil {
 		err = n.call(c, model.Register, res, n.pRegisterURL, nil)
 	}
 	return
 }
 
+// Set the infomation of instance by this node to the peer node represented
+func (n *Node) Set(c context.Context, arg *model.ArgSet) (err error) {
+	err = n.setCall(c, arg, n.setURL)
+	return
+}
 func (n *Node) call(c context.Context, action model.Action, i *model.Instance, uri string, data interface{}) (err error) {
 	params := url.Values{}
+	params.Set("region", i.Region)
 	params.Set("zone", i.Zone)
 	params.Set("env", i.Env)
 	params.Set("appid", i.AppID)
 	params.Set("hostname", i.Hostname)
+	params.Set("from_zone", "true")
 	if n.otherZone {
 		params.Set("replication", "false")
 	} else {
@@ -133,14 +140,45 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 		Data json.RawMessage `json:"data"`
 	}
 	if err = n.client.Post(c, uri, "", params, &res); err != nil {
-		log.Errorf("node be called(%s) instance(%v) error(%v)", uri, i, err)
+		log.Error("node be called(%s) instance(%v) error(%v)", uri, i, err)
 		return
 	}
 	if res.Code != 0 {
-		log.Errorf("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
-		if err = errors.Int(res.Code); err == errors.Conflict {
+		log.Error("node be called(%s) instance(%v) response code(%v)", uri, i, res.Code)
+		if err = ecode.Int(res.Code); err == ecode.Conflict {
 			_ = json.Unmarshal([]byte(res.Data), data)
 		}
+	}
+	return
+}
+
+func (n *Node) setCall(c context.Context, arg *model.ArgSet, uri string) (err error) {
+	params := url.Values{}
+	params.Set("region", arg.Region)
+	params.Set("zone", arg.Zone)
+	params.Set("env", arg.Env)
+	params.Set("appid", arg.AppID)
+	params.Set("hostname", strings.Join(arg.Hostname, ","))
+	params.Set("set_timestamp", strconv.FormatInt(arg.SetTimestamp, 10))
+	params.Set("replication", "true")
+	if len(arg.Status) != 0 {
+		params.Set("status", xstr.JoinInts(arg.Status))
+	}
+	if len(arg.Metadata) != 0 {
+		for _, metadata := range arg.Metadata {
+			params.Add("metadata", metadata)
+		}
+	}
+	var res struct {
+		Code int `json:"code"`
+	}
+	if err = n.client.Post(c, uri, "", params, &res); err != nil {
+		log.Error("node be setCalled(%s) appid(%s) env (%s) error(%v)", uri, arg.AppID, arg.Env, err)
+		return
+	}
+	if res.Code != 0 {
+		log.Error("node be setCalled(%s) appid(%s) env (%s) responce code(%v)", uri, arg.AppID, arg.Env, res.Code)
+		err = ecode.Int(res.Code)
 	}
 	return
 }

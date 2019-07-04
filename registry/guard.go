@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	log "github.com/golang/glog"
+	log "github.com/bilibili/kratos/pkg/log"
 )
 
 const (
@@ -54,7 +54,7 @@ func (g *Guard) incrFac() {
 func (g *Guard) ok() (is bool) {
 	is = atomic.LoadInt64(&g.facLastMin) < atomic.LoadInt64(&g.expThreshold)
 	if is {
-		log.Warningf("discovery is protected, the factual renews(%d) less than expected renews(%d)", atomic.LoadInt64(&g.facLastMin), atomic.LoadInt64(&g.expThreshold))
+		log.Warn("discovery is protected, the factual renews(%d) less than expected renews(%d)", atomic.LoadInt64(&g.facLastMin), atomic.LoadInt64(&g.expThreshold))
 	}
 	return
 }
