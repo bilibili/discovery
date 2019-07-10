@@ -45,6 +45,8 @@ func (d *Discovery) syncUp() {
 			log.Error("service syncup from(%s) failed ", uri)
 			continue
 		}
+		// sync success from other node,exit protected mode
+		d.protected = false
 		for _, is := range res.Data {
 			for _, i := range is {
 				_ = d.registry.Register(i, i.LatestTimestamp)
