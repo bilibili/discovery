@@ -149,6 +149,9 @@ func set(c *bm.Context) {
 		c.JSON(nil, ecode.RequestErr)
 		return
 	}
+	if arg.SetTimestamp == 0 {
+		arg.SetTimestamp = time.Now().UnixNano()
+	}
 	c.JSON(nil, dis.Set(c, arg))
 }
 

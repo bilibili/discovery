@@ -311,9 +311,6 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 		dst     *Instance
 		setTime int64
 	)
-	if changes.SetTimestamp == 0 {
-		setTime = time.Now().UnixNano()
-	}
 	for i, hostname := range changes.Hostname {
 		if dst, ok = a.instances[hostname]; !ok {
 			log.Error("SetWeight hostname(%s) not found", hostname)
