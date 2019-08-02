@@ -80,7 +80,6 @@ func TestDiscovery(t *testing.T) {
 		dis.node.Store([]string{"127.0.0.1:7171"})
 		_ = dis.renew(context.TODO(), instance)
 		Convey("test discovery set", func() {
-			rs := dis.Build(appid)
 			inSet := &Instance{
 				Region:   "test",
 				Zone:     "test",
@@ -98,6 +97,7 @@ func TestDiscovery(t *testing.T) {
 			}
 			err = dis.Set(inSet)
 			So(err, ShouldBeNil)
+			rs := dis.Build(appid)
 			ch := rs.Watch()
 			<-ch
 			ins, _ := rs.Fetch()
