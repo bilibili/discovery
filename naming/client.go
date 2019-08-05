@@ -545,7 +545,9 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]*InstancesInfo, 
 	params.Set("latest_timestamp", xstr.JoinInts(lastTss))
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
 		d.switchNode()
-		log.Error("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)
+		if ctx.Err() != context.Canceled {
+			log.Error("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)
+		}
 		return
 	}
 	if ec := ecode.Int(res.Code); !ec.Equal(ecode.OK) {
