@@ -51,7 +51,7 @@ type ArgFetch struct {
 type ArgFetchs struct {
 	Zone   string   `form:"zone"`
 	Env    string   `form:"env" validate:"required"`
-	AppID  []string `form:"appid,split" validate:"gt=0"`
+	AppID  []string `form:"appid" validate:"gt=0"`
 	Status uint32   `form:"status" validate:"required"`
 }
 
@@ -68,9 +68,9 @@ type ArgPoll struct {
 type ArgPolls struct {
 	Zone            string   `form:"zone"`
 	Env             string   `form:"env" validate:"required"`
-	AppID           []string `form:"appid,split" validate:"gt=0"`
+	AppID           []string `form:"appid" validate:"gt=0"`
 	Hostname        string   `form:"hostname" validate:"required"`
-	LatestTimestamp []int64  `form:"latest_timestamp,split"`
+	LatestTimestamp []int64  `form:"latest_timestamp"`
 }
 
 // ArgSet define set param.
