@@ -359,7 +359,7 @@ GET http://HOST/discovery/polls
 | appid    | true  | []string            | 服务名标识                       |
 | env      | true  | string            | 环境                             |
 | zone     | false  | string            | 可用区，不传返回所有zone的                           |
-| latest_timestamp | false  | []int            | 服务最新更新时间，要与appid一一对应           |
+| latest_timestamp | true  | []int          | 服务最新更新时间,参数个数和appid相同              |
 
 *返回结果*
 
