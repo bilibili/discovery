@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
 	"github.com/bilibili/discovery/registry"
 	"github.com/bilibili/kratos/pkg/ecode"
-
 	log "github.com/bilibili/kratos/pkg/log"
+	xip "github.com/bilibili/kratos/pkg/net/ip"
 )
 
 var (
@@ -60,6 +61,7 @@ func (d *Discovery) syncUp() {
 func (d *Discovery) regSelf() context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
 	now := time.Now().UnixNano()
+	addr := strings.ReplaceAll(d.c.HTTPServer.Addr, "0.0.0.0", xip.InternalIP())
 	ins := &model.Instance{
 		Region:   d.c.Env.Region,
 		Zone:     d.c.Env.Zone,
@@ -67,7 +69,7 @@ func (d *Discovery) regSelf() context.CancelFunc {
 		Hostname: d.c.Env.Host,
 		AppID:    model.AppID,
 		Addrs: []string{
-			"http://" + d.c.HTTPServer.Addr,
+			"http://" + addr,
 		},
 		Status:          model.InstanceStatusUP,
 		RegTimestamp:    now,
