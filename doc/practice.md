@@ -76,8 +76,8 @@ B站内部有k8s平台，平台名字叫caster。
 
 ### 没上caster平台的服务
 
-服务基于`naming/client.go`中SDK实现进程启动和退出时的register/renew/cancel，详细请看`naming/exanple_test.go`内示例代码
+服务基于`naming/client.go`中SDK实现进程启动和退出时的register/renew/cancel，详细请看`naming/example_test.go`内示例代码
 
 ## 服务消费者
 
-服务消费者通过使用`naming/client.go`中SDK实现依赖appID的fetchs/polls，详细请看`naming/exanple_test.go`内示例代码
+服务消费者通过使用`naming/client.go`中SDK实现依赖appID的fetchs/polls，详细请看`naming/example_test.go`内示例代码

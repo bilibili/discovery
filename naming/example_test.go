@@ -37,7 +37,7 @@ type consumer struct {
 	ins   []*naming.Instance
 }
 
-// This Example show how get watch a server provier and get provider instances.
+// This Example show how get watch a server provider and get provider instances.
 func ExampleResolver_Watch() {
 	conf := &naming.Config{
 		Nodes: []string{"127.0.0.1:7171"},

@@ -171,17 +171,17 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 	for z, app := range p.apps {
 		if zone == "" || z == zone {
 			ok = true
-			instance := make([]*Instance, 0)
+			instances := make([]*Instance, 0)
 			for _, i := range app.Instances() {
 				// if up is false return all status instance
 				if i.filter(status) {
 					// if i.Status == InstanceStatusUP && i.LatestTimestamp > latestTime { // TODO(felix): increase
 					ni := new(Instance)
 					*ni = *i
-					instance = append(instance, ni)
+					instances = append(instances, ni)
 				}
 			}
-			ci.Instances[z] = instance
+			ci.Instances[z] = instances
 		}
 	}
 	if !ok {
@@ -309,7 +309,7 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 	defer a.lock.Unlock()
 	var (
 		dst     *Instance
-		setTime int64
+		setTime = time.Now().UnixNano()
 	)
 	for i, hostname := range changes.Hostname {
 		if dst, ok = a.instances[hostname]; !ok {
