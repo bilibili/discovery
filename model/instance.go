@@ -309,7 +309,7 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 	defer a.lock.Unlock()
 	var (
 		dst     *Instance
-		setTime int64
+		setTime = changes.SetTimestamp
 	)
 	if changes.SetTimestamp == 0 {
 		setTime = time.Now().UnixNano()
