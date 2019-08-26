@@ -1,5 +1,9 @@
 #### Discovery
 
+##### Version 1.1.2
+1. fix no LatestTimestamp when register
+2. update go mod
+
 ##### Version 1.1.1
 1. fix initproject abort
 
