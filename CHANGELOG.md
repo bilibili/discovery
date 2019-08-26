@@ -2,7 +2,8 @@
 
 ##### Version 1.1.2
 1. fix no LatestTimestamp when register
-2. update go mod
+2. fix param split bug
+3. update go mod
 
 ##### Version 1.1.1
 1. fix initproject abort

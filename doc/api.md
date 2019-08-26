@@ -359,7 +359,7 @@ GET http://HOST/discovery/polls
 | appid    | true  | []string            | 服务名标识                       |
 | env      | true  | string            | 环境                             |
 | zone     | false  | string            | 可用区，不传返回所有zone的                           |
-| latest_timestamp | false  | int            | 服务最新更新时间                           |
+| latest_timestamp | false  | []int            | 服务最新更新时间，要与appid一一对应           |
 
 *返回结果*
 
@@ -431,7 +431,7 @@ GET http://HOST/discovery/polls
 
 *CURL*
 ```shell
-curl 'http://127.0.0.1:7171/discovery/polls?zone=sh1&env=test&appid=provider&appid=provider2&latest_timestamp=0'
+curl 'http://127.0.0.1:7171/discovery/polls?zone=sh1&env=test&appid=provider1&appid=provider2&latest_timestamp=01&latest_timestamp=02'
 ```
 
 ### 获取node节点

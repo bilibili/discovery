@@ -8,7 +8,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
-	"strings"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -16,7 +16,6 @@ import (
 	ecode "github.com/bilibili/kratos/pkg/ecode"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
-	xstr "github.com/bilibili/kratos/pkg/str"
 	xtime "github.com/bilibili/kratos/pkg/time"
 )
 
@@ -335,7 +334,9 @@ func (d *Discovery) register(ctx context.Context, ins *Instance) (err error) {
 	uri := fmt.Sprintf(_registerURL, d.pickNode())
 	params := d.newParams(c)
 	params.Set("appid", ins.AppID)
-	params.Set("addrs", strings.Join(ins.Addrs, ","))
+	for _, addr := range ins.Addrs {
+		params.Add("addrs", addr)
+	}
 	params.Set("version", ins.Version)
 	params.Set("status", _statusUP)
 	params.Set("metadata", string(metadata))
@@ -541,8 +542,12 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]*InstancesInfo, 
 	params := url.Values{}
 	params.Set("env", c.Env)
 	params.Set("hostname", c.Host)
-	params.Set("appid", strings.Join(appIDs, ","))
-	params.Set("latest_timestamp", xstr.JoinInts(lastTss))
+	for _, appid := range appIDs {
+		params.Add("appid", appid)
+	}
+	for _, ts := range lastTss {
+		params.Add("latest_timestamp", strconv.FormatInt(ts, 10))
+	}
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
 		d.switchNode()
 		if ctx.Err() != context.Canceled {
