@@ -69,18 +69,19 @@ type Instance struct {
 func NewInstance(arg *ArgRegister) (i *Instance) {
 	now := time.Now().UnixNano()
 	i = &Instance{
-		Region:         arg.Region,
-		Zone:           arg.Zone,
-		Env:            arg.Env,
-		AppID:          arg.AppID,
-		Hostname:       arg.Hostname,
-		Addrs:          arg.Addrs,
-		Version:        arg.Version,
-		Status:         arg.Status,
-		RegTimestamp:   now,
-		UpTimestamp:    now,
-		RenewTimestamp: now,
-		DirtyTimestamp: now,
+		Region:          arg.Region,
+		Zone:            arg.Zone,
+		Env:             arg.Env,
+		AppID:           arg.AppID,
+		Hostname:        arg.Hostname,
+		Addrs:           arg.Addrs,
+		Version:         arg.Version,
+		Status:          arg.Status,
+		RegTimestamp:    now,
+		UpTimestamp:     now,
+		LatestTimestamp: now,
+		RenewTimestamp:  now,
+		DirtyTimestamp:  now,
 	}
 	if arg.Metadata != "" {
 		if err := json.Unmarshal([]byte(arg.Metadata), &i.Metadata); err != nil {
