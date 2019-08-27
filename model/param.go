@@ -8,7 +8,7 @@ type ArgRegister struct {
 	AppID           string   `form:"appid" validate:"required"`
 	Hostname        string   `form:"hostname" validate:"required"`
 	Status          uint32   `form:"status" validate:"required"`
-	Addrs           []string `form:"addrs,split" validate:"gt=0"`
+	Addrs           []string `form:"addrs" validate:"gt=0"`
 	Version         string   `form:"version"`
 	Metadata        string   `form:"metadata"`
 	Replication     bool     `form:"replication"`
@@ -79,9 +79,9 @@ type ArgSet struct {
 	Zone         string   `form:"zone" validate:"required"`
 	Env          string   `form:"env" validate:"required"`
 	AppID        string   `form:"appid" validate:"required"`
-	Hostname     []string `form:"hostname,split" validate:"gte=0"`
-	Status       []int64  `form:"status,split" validate:"gte=0"`
-	Metadata     []string `form:"metadata" validate:"gte=0"` // metadata may contain `,` , use metadata=xx&metadata=xx instead of split by ','
+	Hostname     []string `form:"hostname" validate:"gte=0"`
+	Status       []int64  `form:"status" validate:"gte=0"`
+	Metadata     []string `form:"metadata" validate:"gte=0"`
 	Replication  bool     `form:"replication"`
 	FromZone     bool     `form:"from_zone"`
 	SetTimestamp int64    `form:"set_timestamp"`

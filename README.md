@@ -37,7 +37,7 @@ You can view the comments in `cmd/discovery/discovery-example.toml` to understan
 * [Java SDK](https://github.com/flygit/discoveryJavaSDK)
 * [CPP SDK](https://github.com/brpc/brpc/blob/master/src/brpc/policy/discovery_naming_service.cpp)
 * [Python SDK](https://github.com/tomwei7/discovery-client)
-* [other languaue](doc/sdk.md)
+* [other language](doc/sdk.md)
 
 ## Intro/Arch/Practice
 

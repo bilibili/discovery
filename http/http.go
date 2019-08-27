@@ -13,7 +13,7 @@ import (
 var (
 	dis          *discovery.Discovery
 	protected    = true
-	errProtected = errors.New("discovery in protect mode,only support register")
+	errProtected = errors.New("discovery in protect mode and only support register")
 )
 
 // Init init http
@@ -47,8 +47,7 @@ func innerRouter(e *bm.Engine) {
 
 func initProtect(ctx *bm.Context) {
 	if dis.Protected() {
-		ctx.JSONMap(map[string]interface{}{
-			"message": errProtected.Error(),
-		}, errProtected)
+		ctx.JSON(nil, errProtected)
+		ctx.AbortWithStatus(503)
 	}
 }

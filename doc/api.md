@@ -431,7 +431,7 @@ GET http://HOST/discovery/polls
 
 *CURL*
 ```shell
-curl 'http://127.0.0.1:7171/discovery/polls?zone=sh1&env=test&appid=provider&appid=provider2&latest_timestamp=0'
+curl 'http://127.0.0.1:7171/discovery/polls?zone=sh1&env=test&appid=provider1&appid=provider2&latest_timestamp=01&latest_timestamp=02'
 ```
 
 ### 获取node节点
