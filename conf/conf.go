@@ -63,7 +63,7 @@ func (c *Config) Fix() (err error) {
 	return
 }
 
-// Env is disocvery env.
+// Env is discovery env.
 type Env struct {
 	Region    string
 	Zone      string
