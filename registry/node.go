@@ -13,7 +13,6 @@ import (
 	"github.com/bilibili/kratos/pkg/ecode"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
-	xstr "github.com/bilibili/kratos/pkg/str"
 )
 
 const (
@@ -158,11 +157,17 @@ func (n *Node) setCall(c context.Context, arg *model.ArgSet, uri string) (err er
 	params.Set("zone", arg.Zone)
 	params.Set("env", arg.Env)
 	params.Set("appid", arg.AppID)
-	params.Set("hostname", strings.Join(arg.Hostname, ","))
 	params.Set("set_timestamp", strconv.FormatInt(arg.SetTimestamp, 10))
 	params.Set("replication", "true")
+	if len(arg.Hostname) != 0 {
+		for _, name := range arg.Hostname {
+			params.Add("hostname", name)
+		}
+	}
 	if len(arg.Status) != 0 {
-		params.Set("status", xstr.JoinInts(arg.Status))
+		for _, status := range arg.Status {
+			params.Add("status", strconv.FormatInt(status, 10))
+		}
 	}
 	if len(arg.Metadata) != 0 {
 		for _, metadata := range arg.Metadata {
