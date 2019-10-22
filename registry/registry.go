@@ -23,7 +23,7 @@ type Registry struct {
 	appm  map[string]*model.Apps // appid-env -> apps
 	aLock sync.RWMutex
 
-	conns     map[string]map[string]*conn // region.zone.env.appid-> host
+	conns     map[string]*hosts // region.zone.env.appid-> host
 	cLock     sync.RWMutex
 	scheduler *scheduler
 	gd        *Guard
@@ -51,7 +51,7 @@ func newConn(ch chan map[string]*model.InstanceInfo, latestTime int64, arg *mode
 func NewRegistry(conf *conf.Config) (r *Registry) {
 	r = &Registry{
 		appm:  make(map[string]*model.Apps),
-		conns: make(map[string]map[string]*conn),
+		conns: make(map[string]*hosts),
 		gd:    new(Guard),
 	}
 	r.scheduler = newScheduler(r)
@@ -186,20 +186,19 @@ func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint3
 }
 
 // Polls hangs request and then write instances when that has changes, or return NotModified.
-func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, miss string, err error) {
+func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.InstanceInfo, new bool, miss []string, err error) {
 	var (
 		ins = make(map[string]*model.InstanceInfo, len(arg.AppID))
-		in  *model.InstanceInfo
 	)
 	if len(arg.AppID) != len(arg.LatestTimestamp) {
 		arg.LatestTimestamp = make([]int64, len(arg.AppID))
 	}
 	for i := range arg.AppID {
-		in, err = r.Fetch(arg.Zone, arg.Env, arg.AppID[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
+		in, err := r.Fetch(arg.Zone, arg.Env, arg.AppID[i], arg.LatestTimestamp[i], model.InstanceStatusUP)
 		if err == ecode.NothingFound {
-			miss = arg.AppID[i]
+			miss = append(miss, arg.AppID[i])
 			log.Error("Polls zone(%s) env(%s) appid(%s) error(%v)", arg.Zone, arg.Env, arg.AppID[i], err)
-			return
+			continue
 		}
 		if err == nil {
 			ins[arg.AppID[i]] = in
@@ -211,13 +210,15 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 		ch <- ins
 		return
 	}
-	r.cLock.Lock()
 	for i := range arg.AppID {
 		k := pollKey(arg.Env, arg.AppID[i])
+		r.cLock.Lock()
 		if _, ok := r.conns[k]; !ok {
-			r.conns[k] = make(map[string]*conn, 1)
+			r.conns[k] = &hosts{hosts: make(map[string]*conn, 1)}
 		}
-		connection, ok := r.conns[k][arg.Hostname]
+		hosts := r.conns[k]
+		hosts.hclock.Lock()
+		connection, ok := hosts.hosts[arg.Hostname]
 		if !ok {
 			if ch == nil {
 				ch = make(chan map[string]*model.InstanceInfo, 5) // NOTE: there maybe have more than one connection on the same hostname!!!
@@ -231,9 +232,9 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 			}
 			log.Info("Polls from(%s) reuse connection(%d)", arg.Hostname, connection.count)
 		}
-		r.conns[k][arg.Hostname] = connection
+		hosts.hosts[arg.Hostname] = connection
+		hosts.hclock.Unlock()
 	}
-	r.cLock.Unlock()
 	return
 }
 
@@ -242,13 +243,15 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 func (r *Registry) broadcast(env, appid string) {
 	key := pollKey(env, appid)
 	r.cLock.Lock()
-	defer r.cLock.Unlock()
 	conns, ok := r.conns[key]
 	if !ok {
+		r.cLock.Unlock()
 		return
 	}
 	delete(r.conns, key)
-	for _, conn := range conns {
+	r.cLock.Unlock()
+	conns.hclock.RLock()
+	for _, conn := range conns.hosts {
 		ii, err := r.Fetch(conn.arg.Zone, env, appid, 0, model.InstanceStatusUP) // TODO(felix): latesttime!=0 increase
 		if err != nil {
 			// may be not found ,just continue until next poll return err.
@@ -264,6 +267,7 @@ func (r *Registry) broadcast(env, appid string) {
 			}
 		}
 	}
+	conns.hclock.RUnlock()
 }
 
 func pollKey(env, appid string) string {
@@ -361,23 +365,25 @@ func (r *Registry) evict() {
 
 // DelConns delete conn of host in appid
 func (r *Registry) DelConns(arg *model.ArgPolls) {
-	r.cLock.Lock()
 	for i := range arg.AppID {
+		r.cLock.Lock()
 		k := pollKey(arg.Env, arg.AppID[i])
 		conns, ok := r.conns[k]
+		r.cLock.Unlock()
 		if !ok {
 			log.Warn("DelConn key(%s) not found", k)
 			continue
 		}
-		if connection, ok := conns[arg.Hostname]; ok {
+		conns.hclock.Lock()
+		if connection, ok := conns.hosts[arg.Hostname]; ok {
 			if connection.count > 1 {
 				log.Info("DelConns from(%s) count decr(%d)", arg.Hostname, connection.count)
 				connection.count--
 			} else {
 				log.Info("DelConns from(%s) delete(%d)", arg.Hostname, connection.count)
-				delete(conns, arg.Hostname)
+				delete(conns.hosts, arg.Hostname)
 			}
 		}
+		conns.hclock.Unlock()
 	}
-	r.cLock.Unlock()
 }

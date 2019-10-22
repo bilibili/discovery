@@ -1,7 +1,8 @@
 #### Discovery
 ##### Version 1.2.0 
 1. multi zone scheduler 
-
+2. optimize lock scope  
+3. return appids which not exist when polls
 ##### Version 1.1.2
 1. fix no LatestTimestamp when register
 2. fix param split bug
