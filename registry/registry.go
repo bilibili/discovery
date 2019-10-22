@@ -29,6 +29,11 @@ type Registry struct {
 	gd        *Guard
 }
 
+type hosts struct {
+	hclock sync.RWMutex
+	hosts  map[string]*conn // host name to conn
+}
+
 // conn the poll chan contains consumer.
 type conn struct {
 	ch         chan map[string]*model.InstanceInfo // TODO(felix): increase
@@ -50,7 +55,8 @@ func NewRegistry(conf *conf.Config) (r *Registry) {
 		gd:    new(Guard),
 	}
 	r.scheduler = newScheduler(r)
-	r.scheduler.Load(conf.Scheduler)
+	r.scheduler.Load()
+	go r.scheduler.Reload()
 	go r.proc()
 	return
 }
@@ -173,7 +179,8 @@ func (r *Registry) Fetch(zone, env, appid string, latestTime int64, status uint3
 	}
 	sch := r.scheduler.Get(appid, env)
 	if sch != nil {
-		info.Scheduler = sch.Zones
+		info.Scheduler = new(model.Scheduler)
+		info.Scheduler.Clients = sch.Clients
 	}
 	return
 }
