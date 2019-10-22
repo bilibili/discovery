@@ -1,4 +1,6 @@
 #### Discovery
+##### Version 1.2.0 
+1. multi zone scheduler 
 
 ##### Version 1.1.2
 1. fix no LatestTimestamp when register

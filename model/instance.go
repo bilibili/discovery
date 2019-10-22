@@ -94,7 +94,7 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 // InstanceInfo the info get by consumer.
 type InstanceInfo struct {
 	Instances       map[string][]*Instance `json:"instances"`
-	Scheduler       []Zone                 `json:"scheduler,omitempty"`
+	Scheduler       *Scheduler             `json:"scheduler,omitempty"`
 	LatestTimestamp int64                  `json:"latest_timestamp"`
 }
 
@@ -312,9 +312,6 @@ func (a *App) Set(changes *ArgSet) (ok bool) {
 		dst     *Instance
 		setTime = changes.SetTimestamp
 	)
-	if changes.SetTimestamp == 0 {
-		setTime = time.Now().UnixNano()
-	}
 	for i, hostname := range changes.Hostname {
 		if dst, ok = a.instances[hostname]; !ok {
 			log.Error("SetWeight hostname(%s) not found", hostname)
