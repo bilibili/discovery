@@ -1,13 +1,16 @@
 package registry
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
+	"github.com/bilibili/kratos/pkg/conf/paladin"
 	"github.com/bilibili/kratos/pkg/ecode"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -22,6 +25,13 @@ var arg = &model.ArgRenew{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", H
 var cancel = &model.ArgCancel{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Hostname: "reg"}
 var cancel2 = &model.ArgCancel{Zone: "sh0001", Env: "pre", AppID: "main.arch.test", Hostname: "regH1"}
 
+func TestMain(m *testing.M) {
+	flag.Set("conf", "./")
+	flag.Parse()
+	paladin.Init()
+	m.Run()
+	os.Exit(0)
+}
 func TestReigster(t *testing.T) {
 	i := model.NewInstance(reg)
 	register(t, i)
