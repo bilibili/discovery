@@ -14,12 +14,14 @@ import (
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
 
+	"github.com/bilibili/kratos/pkg/conf/paladin"
 	xhttp "github.com/bilibili/kratos/pkg/net/http/blademaster"
 	xtime "github.com/bilibili/kratos/pkg/time"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMain(m *testing.M) {
+	flag.Set("conf", "./")
 	flag.Parse()
 	go mockDiscoverySvr()
 	time.Sleep(time.Second)
@@ -46,6 +48,7 @@ func mockDiscoverySvr() {
 		},
 	}
 	_ = c.Fix()
+	paladin.Init()
 	dis, _ := discovery.New(c)
 	http.Init(c, dis)
 }

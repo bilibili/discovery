@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"flag"
 	"os"
 	"strings"
 	"testing"
@@ -10,6 +11,7 @@ import (
 	dc "github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
 
+	"github.com/bilibili/kratos/pkg/conf/paladin"
 	"github.com/bilibili/kratos/pkg/ecode"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
 	xtime "github.com/bilibili/kratos/pkg/time"
@@ -32,6 +34,13 @@ var (
 	pollArg = newPoll()
 )
 
+func TestMain(m *testing.M) {
+	flag.Set("conf", "./")
+	flag.Parse()
+	paladin.Init()
+	m.Run()
+	os.Exit(0)
+}
 func newFetchArg() *model.ArgFetchs {
 	return &model.ArgFetchs{AppID: []string{"main.arch.test"}, Zone: "sh001", Env: "pre", Status: 1}
 }

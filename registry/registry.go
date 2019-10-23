@@ -217,6 +217,8 @@ func (r *Registry) Polls(arg *model.ArgPolls) (ch chan map[string]*model.Instanc
 			r.conns[k] = &hosts{hosts: make(map[string]*conn, 1)}
 		}
 		hosts := r.conns[k]
+		r.cLock.Unlock()
+
 		hosts.hclock.Lock()
 		connection, ok := hosts.hosts[arg.Hostname]
 		if !ok {
