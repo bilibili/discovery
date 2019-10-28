@@ -183,7 +183,7 @@ func (d *Discovery) newSelf(zones map[string][]*Instance) {
 	d.node.Store(nodes)
 }
 
-// Build disovery resovler builder.
+// Build discovery resovler builder.
 func (d *Discovery) Build(appid string) Resolver {
 	r := &Resolve{
 		id:    appid,
@@ -210,7 +210,7 @@ func (d *Discovery) Build(appid string) Resolver {
 		default:
 		}
 	}
-	log.Info("disocvery: AddWatch(%s) already watch(%v)", appid, ok)
+	log.Info("discovery: AddWatch(%s) already watch(%v)", appid, ok)
 	d.once.Do(func() {
 		go d.serverproc()
 	})
