@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/bilibili/discovery/model"
@@ -85,11 +86,17 @@ func poll(c *bm.Context) {
 		return
 	}
 	ch, new, miss, err := dis.Polls(c, arg)
-	if err != nil && err != ecode.NotModified {
-		c.JSON(map[string]interface{}{
-			miss: map[string]string{"err": "not found"},
-		}, err)
+	if err != nil {
+		c.JSON(nil, err)
 		return
+	}
+	for _, mi := range miss {
+		if mi == arg.AppID[0] {
+			c.JSONMap(map[string]interface{}{
+				"message": fmt.Sprintf("%s not found", mi),
+			}, ecode.NothingFound)
+			return
+		}
 	}
 	// wait for instance change
 	select {
@@ -117,16 +124,19 @@ func polls(c *bm.Context) {
 		return
 	}
 	ch, new, miss, err := dis.Polls(c, arg)
-	if err != nil && err != ecode.NotModified {
-		c.JSON(map[string]interface{}{
-			miss: map[string]string{"err": "not found"},
-		}, err)
+	if err != nil {
+		c.JSON(nil, err)
 		return
 	}
 	// wait for instance change
 	select {
 	case e := <-ch:
-		c.JSON(e, nil)
+		c.JSONMap(map[string]interface{}{
+			"data": e,
+			"error": map[ecode.Code]interface{}{
+				ecode.NothingFound: miss,
+			},
+		}, nil)
 		if !new {
 			dis.DelConns(arg) // broadcast will delete all connections of appid
 		}

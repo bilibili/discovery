@@ -2,10 +2,10 @@ package conf
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"github.com/bilibili/kratos/pkg/conf/paladin"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
 )
@@ -17,6 +17,7 @@ var (
 	zone          string
 	deployEnv     string
 	hostname      string
+	configKey     string
 	// Conf conf
 	Conf = &Config{}
 )
@@ -26,7 +27,7 @@ func init() {
 	if hostname, err = os.Hostname(); err != nil || hostname == "" {
 		hostname = os.Getenv("HOSTNAME")
 	}
-	flag.StringVar(&confPath, "conf", "discovery-example.toml", "config path")
+	flag.StringVar(&configKey, "confkey", "discovery-example.toml", "discovery conf key")
 	flag.StringVar(&hostname, "hostname", hostname, "machine hostname")
 	flag.StringVar(&schedulerPath, "scheduler", "scheduler.json", "scheduler info")
 }
@@ -73,11 +74,22 @@ type Env struct {
 
 // Init init conf
 func Init() (err error) {
-	if _, err = toml.DecodeFile(confPath, &Conf); err != nil {
+	if err = paladin.Init(); err != nil {
 		return
 	}
-	if schedulerPath != "" {
-		Conf.Scheduler, _ = ioutil.ReadFile(schedulerPath)
+	return paladin.Watch(configKey, Conf)
+}
+
+// Set config setter.
+func (c *Config) Set(content string) (err error) {
+	var tmpConf *Config
+	if _, err = toml.Decode(content, &tmpConf); err != nil {
+		log.Error("decode config fail %v", err)
+		return
 	}
-	return Conf.Fix()
+	if err = tmpConf.Fix(); err != nil {
+		return
+	}
+	*Conf = *tmpConf
+	return nil
 }
