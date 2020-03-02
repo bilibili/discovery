@@ -91,6 +91,21 @@ func NewInstance(arg *ArgRegister) (i *Instance) {
 	return
 }
 
+// deep copy a new instance from old one
+func copyInstance(oi *Instance) (ni *Instance) {
+	ni = new(Instance)
+	*ni = *oi
+	ni.Addrs = make([]string, len(oi.Addrs))
+	for i, add := range oi.Addrs {
+		ni.Addrs[i] = add
+	}
+	ni.Metadata = make(map[string]string)
+	for k, v := range oi.Metadata {
+		ni.Metadata[k] = v
+	}
+	return
+}
+
 // InstanceInfo the info get by consumer.
 type InstanceInfo struct {
 	Instances       map[string][]*Instance `json:"instances"`
@@ -177,8 +192,7 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 				// if up is false return all status instance
 				if i.filter(status) {
 					// if i.Status == InstanceStatusUP && i.LatestTimestamp > latestTime { // TODO(felix): increase
-					ni := new(Instance)
-					*ni = *i
+					ni := copyInstance(i)
 					instances = append(instances, ni)
 				}
 			}
