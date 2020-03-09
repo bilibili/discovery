@@ -10,6 +10,7 @@ COPY --from=build /app/building/dist/bin/discovery /app/bin/
 COPY --from=build /app/building/dist/conf/discovery.toml /app/conf/
 # Copy from local build
 #ADD  dist/ /app/
-ENV  LOG_DIR    /app/logs
+ENV  LOG_DIR    /app/log
+EXPOSE 7171
 WORKDIR /app/
 CMD  /app/bin/discovery -conf /app/conf/ -confkey discovery.toml
