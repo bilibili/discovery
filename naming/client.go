@@ -549,7 +549,6 @@ func (d *Discovery) polls(ctx context.Context) (apps map[string]*InstancesInfo, 
 		params.Add("latest_timestamp", strconv.FormatInt(ts, 10))
 	}
 	if err = d.httpClient.Get(ctx, uri, "", params, res); err != nil {
-		d.switchNode()
 		if ctx.Err() != context.Canceled {
 			log.Error("discovery: client.Get(%s) error(%+v)", uri+"?"+params.Encode(), err)
 		}

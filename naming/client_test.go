@@ -108,6 +108,7 @@ func TestDiscovery(t *testing.T) {
 		})
 	})
 	Convey("test discovery watch", t, func() {
+		dis.node.Store([]string{"127.0.0.1:7172", "127.0.0.1:7171"})
 		rsl := dis.Build(appid)
 		ch := rsl.Watch()
 		<-ch
