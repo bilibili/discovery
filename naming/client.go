@@ -489,12 +489,42 @@ func (d *Discovery) serverproc() {
 				ctx = nil
 				continue
 			}
+			nodes, _ := d.node.Load().([]string)
+			if retry >= len(nodes) {
+				d.tryAppendSeedNodes()
+				retry = 0
+			}
 			time.Sleep(time.Second)
 			retry++
 			continue
 		}
 		retry = 0
 		d.broadcast(apps)
+	}
+}
+
+func (d *Discovery) tryAppendSeedNodes() {
+	nodes, ok := d.node.Load().([]string)
+	if !ok {
+		return
+	}
+	exist := make(map[string]struct{}, len(nodes))
+	for _, node := range nodes {
+		exist[node] = struct{}{}
+	}
+	d.mutex.Lock()
+	seedNodes := d.c.Nodes
+	d.mutex.Unlock()
+	var changed bool
+	for _, node := range seedNodes {
+		if _, ok := exist[node]; !ok {
+			nodes = append(nodes, node)
+			changed = true
+		}
+	}
+	if changed {
+		d.node.Store(nodes)
+		log.Info("discovery: append seed nodes(%s)", nodes)
 	}
 }
 
