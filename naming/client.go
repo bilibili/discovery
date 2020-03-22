@@ -147,7 +147,9 @@ func (d *Discovery) selfproc(resolver Resolver, event <-chan struct{}) {
 }
 
 func (d *Discovery) newSelf(zones map[string][]*Instance) {
+	d.mutex.Lock()
 	ins, ok := zones[d.c.Zone]
+	d.mutex.Unlock()
 	if !ok {
 		return
 	}
