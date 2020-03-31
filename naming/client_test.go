@@ -100,6 +100,7 @@ func TestDiscovery(t *testing.T) {
 			}
 			err = dis.Set(inSet)
 			So(err, ShouldBeNil)
+			dis.node.Store([]string{"127.0.0.1:7172"})
 			rs := dis.Build(appid)
 			ch := rs.Watch()
 			<-ch
