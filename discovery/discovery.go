@@ -1,7 +1,15 @@
+/*
+ * @Author: gitsrc
+ * @Date: 2020-09-04 09:57:29
+ * @LastEditors: gitsrc
+ * @LastEditTime: 2020-09-04 10:05:14
+ * @FilePath: /discovery/discovery/discovery.go
+ */
 package discovery
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +25,7 @@ type Discovery struct {
 	client    *http.Client
 	registry  *registry.Registry
 	nodes     atomic.Value
+	sync.RWMutex
 }
 
 // New get a discovery.
@@ -38,5 +47,7 @@ func New(c *conf.Config) (d *Discovery, cancel context.CancelFunc) {
 func (d *Discovery) exitProtect() {
 	// exist protect mode after two renew cycle
 	time.Sleep(time.Second * 60)
+	d.Lock()
 	d.protected = false
+	d.Unlock()
 }

@@ -21,8 +21,11 @@ var (
 // Protected return if service in init protect mode.
 // if service in init protect mode,only support write,
 // read operator isn't supported.
-func (d *Discovery) Protected() bool {
-	return d.protected
+func (d *Discovery) Protected() (ret bool) {
+	d.RLock()
+	ret = d.protected
+	d.RUnlock()
+	return ret
 }
 
 // syncUp populates the registry information from a peer eureka node.
@@ -46,7 +49,9 @@ func (d *Discovery) syncUp() {
 			continue
 		}
 		// sync success from other node,exit protected mode
+		d.Lock()
 		d.protected = false
+		d.Unlock()
 		for _, is := range res.Data {
 			for _, i := range is {
 				_ = d.registry.Register(i, i.LatestTimestamp)
