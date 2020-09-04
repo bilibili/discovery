@@ -204,7 +204,6 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 	} else if len(ci.Instances) == 0 {
 		err = ecode.NotModified
 	} else if status == 1 && !getUpInstance(ci) {
-		// When obtaining the online status of the microservice, verify whether the array is empty, and return a 404 status code if it is an empty array
 		err = ecode.NothingFound
 		ci = nil
 	}
