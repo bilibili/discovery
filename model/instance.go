@@ -281,7 +281,7 @@ func (a *App) Renew(hostname string) (i *Instance, ok bool) {
 		return
 	}
 	oi.RenewTimestamp = time.Now().UnixNano()
-	*i = *oi
+	i = copyInstance(oi)
 	return
 }
 
