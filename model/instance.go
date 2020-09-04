@@ -203,8 +203,30 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 		err = ecode.NothingFound
 	} else if len(ci.Instances) == 0 {
 		err = ecode.NotModified
+	} else if status == 1 && !getUpInstance(ci) {
+		// When obtaining the online status of the microservice, verify whether the array is empty, and return a 404 status code if it is an empty array
+		err = ecode.NothingFound
+		ci = nil
 	}
+
 	return
+}
+
+func getUpInstance(ins *InstanceInfo) bool {
+	isExist := false
+	for _, v := range ins.Instances {
+		for _, ins := range v {
+			if len(ins.Addrs[0]) == 0 || ins.Status != 1 {
+				continue
+			}
+			isExist = true
+			break
+		}
+		if isExist {
+			break
+		}
+	}
+	return isExist
 }
 
 // UpdateLatest update LatestTimestamp.
