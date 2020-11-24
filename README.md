@@ -21,14 +21,14 @@ go build
 
 ### run
 ```shell
-./discovery -confkey discovery-example.toml -alsologtostderr
+./discovery -conf discovery.toml -alsologtostderr
 ```
 
 `-alsologtostderr` is `glog`'s flag，means print into stderr. If you hope print into file, can use `-log.dir="/tmp"`. [view glog doc](https://godoc.org/github.com/golang/glog).
 
 ### Configuration
 
-You can view the comments in `cmd/discovery/discovery-example.toml` to understand the meaning of the config.
+You can view the comments in `cmd/discovery/discovery.toml` to understand the meaning of the config.
 
 ### Client
 
