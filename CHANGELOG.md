@@ -1,6 +1,7 @@
 #### Discovery
 ##### Version 1.2.0 
 1. fix replication set
+2. fix config conflict
 
 ##### Version 1.2.0 
 1. multi zone scheduler 
