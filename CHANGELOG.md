@@ -1,5 +1,5 @@
 #### Discovery
-##### Version 1.2.0 
+##### Version 1.2.1
 1. fix replication set
 2. fix config conflict
 
