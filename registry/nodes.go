@@ -67,6 +67,7 @@ func (ns *Nodes) Replicate(c context.Context, action model.Action, i *model.Inst
 	err = eg.Wait()
 	return
 }
+
 // ReplicateSet replicate set information to all nodes except for this node.
 func (ns *Nodes) ReplicateSet(c context.Context, arg *model.ArgSet, otherZone bool) (err error) {
 	if len(ns.nodes) == 0 {
@@ -75,8 +76,9 @@ func (ns *Nodes) ReplicateSet(c context.Context, arg *model.ArgSet, otherZone bo
 	eg, c := errgroup.WithContext(c)
 	for _, n := range ns.nodes {
 		if !ns.Myself(n.addr) {
+			node := n
 			eg.Go(func() error {
-				return n.Set(c, arg)
+				return node.Set(c, arg)
 			})
 		}
 	}

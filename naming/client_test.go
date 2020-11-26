@@ -47,7 +47,6 @@ func mockDiscoverySvr() {
 			KeepAlive: xtime.Duration(time.Second * 1),
 		},
 	}
-	_ = c.Fix()
 	paladin.Init()
 	dis, _ := discovery.New(c)
 	http.Init(c, dis)

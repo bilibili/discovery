@@ -158,7 +158,12 @@ func (n *Node) setCall(c context.Context, arg *model.ArgSet, uri string) (err er
 	params.Set("env", arg.Env)
 	params.Set("appid", arg.AppID)
 	params.Set("set_timestamp", strconv.FormatInt(arg.SetTimestamp, 10))
-	params.Set("replication", "true")
+	params.Set("from_zone", "true")
+	if n.otherZone {
+		params.Set("replication", "false")
+	} else {
+		params.Set("replication", "true")
+	}
 	if len(arg.Hostname) != 0 {
 		for _, name := range arg.Hostname {
 			params.Add("hostname", name)

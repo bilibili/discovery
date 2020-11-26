@@ -25,6 +25,7 @@ func Init(c *conf.Config, s *discovery.Discovery) {
 		log.Error("bm.DefaultServer error(%v)", err)
 		panic(err)
 	}
+	log.Info("[HTTP] Listening on: %s", c.HTTPServer.Addr)
 }
 
 // innerRouter init local router api path.

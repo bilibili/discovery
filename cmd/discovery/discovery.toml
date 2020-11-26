@@ -2,6 +2,7 @@
 # 同一discovery集群的所有node节点地址，包含本node
 nodes = ["127.0.0.1:7171"]
 enableprotect=false
+
 # 本可用区zone(一般指机房)标识
 [env]
 region = "sh"
@@ -28,3 +29,6 @@ timeout="40s"
 dial = "1s"
 keepAlive = "120s"
 timeout="40s"
+
+[log]
+stdout = true

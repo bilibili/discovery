@@ -1,35 +1,25 @@
 package conf
 
 import (
-	"flag"
-	"os"
-
 	"github.com/BurntSushi/toml"
+	"github.com/bilibili/kratos/pkg/conf/env"
 	"github.com/bilibili/kratos/pkg/conf/paladin"
 	log "github.com/bilibili/kratos/pkg/log"
 	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
 )
 
 var (
-	confPath      string
-	schedulerPath string
-	region        string
-	zone          string
-	deployEnv     string
-	hostname      string
-	configKey     string
+	configKey = "discovery.toml"
 	// Conf conf
 	Conf = &Config{}
 )
 
-func init() {
-	var err error
-	if hostname, err = os.Hostname(); err != nil || hostname == "" {
-		hostname = os.Getenv("HOSTNAME")
-	}
-	flag.StringVar(&configKey, "confkey", "discovery-example.toml", "discovery conf key")
-	flag.StringVar(&hostname, "hostname", hostname, "machine hostname")
-	flag.StringVar(&schedulerPath, "scheduler", "scheduler.json", "scheduler info")
+// Env is discovery env.
+type Env struct {
+	Region    string
+	Zone      string
+	Host      string
+	DeployEnv string
 }
 
 // Config config.
@@ -44,32 +34,23 @@ type Config struct {
 	EnableProtect bool
 }
 
-// Fix fix env config.
-func (c *Config) Fix() (err error) {
+func (c *Config) fix() (err error) {
 	if c.Env == nil {
 		c.Env = new(Env)
 	}
 	if c.Env.Region == "" {
-		c.Env.Region = region
+		c.Env.Region = env.Region
 	}
 	if c.Env.Zone == "" {
-		c.Env.Zone = zone
+		c.Env.Zone = env.Zone
 	}
 	if c.Env.Host == "" {
-		c.Env.Host = hostname
+		c.Env.Host = env.Hostname
 	}
 	if c.Env.DeployEnv == "" {
-		c.Env.DeployEnv = deployEnv
+		c.Env.DeployEnv = env.DeployEnv
 	}
 	return
-}
-
-// Env is discovery env.
-type Env struct {
-	Region    string
-	Zone      string
-	Host      string
-	DeployEnv string
 }
 
 // Init init conf
@@ -87,7 +68,7 @@ func (c *Config) Set(content string) (err error) {
 		log.Error("decode config fail %v", err)
 		return
 	}
-	if err = tmpConf.Fix(); err != nil {
+	if err = tmpConf.fix(); err != nil {
 		return
 	}
 	*Conf = *tmpConf
