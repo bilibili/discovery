@@ -9,8 +9,8 @@ import (
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
 
-	"github.com/bilibili/kratos/pkg/ecode"
-	log "github.com/bilibili/kratos/pkg/log"
+	"github.com/go-kratos/kratos/pkg/ecode"
+	log "github.com/go-kratos/kratos/pkg/log"
 )
 
 const (

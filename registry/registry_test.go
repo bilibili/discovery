@@ -10,8 +10,8 @@ import (
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	"github.com/bilibili/kratos/pkg/ecode"
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
+	"github.com/go-kratos/kratos/pkg/ecode"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

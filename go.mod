@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	github.com/BurntSushi/toml v0.3.1
-	github.com/bilibili/kratos v0.3.3
+	github.com/go-kratos/kratos v0.6.0
 	github.com/gopherjs/gopherjs v0.0.0-20190430165422-3e4dfb77656c // indirect
 	github.com/jtolds/gls v4.20.0+incompatible // indirect
 	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 // indirect

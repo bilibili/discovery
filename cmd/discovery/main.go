@@ -10,7 +10,7 @@ import (
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
-	log "github.com/bilibili/kratos/pkg/log"
+	log "github.com/go-kratos/kratos/pkg/log"
 )
 
 func main() {

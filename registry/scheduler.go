@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/bilibili/discovery/model"
-	"github.com/bilibili/kratos/pkg/conf/paladin"
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
 )
 
 // Scheduler info.

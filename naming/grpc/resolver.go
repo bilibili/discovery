@@ -9,7 +9,7 @@ import (
 
 	"github.com/bilibili/discovery/naming"
 
-	log "github.com/bilibili/kratos/pkg/log"
+	log "github.com/go-kratos/kratos/pkg/log"
 	"google.golang.org/grpc/resolver"
 )
 
