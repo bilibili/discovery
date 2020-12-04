@@ -7,9 +7,9 @@ import (
 
 	"github.com/bilibili/discovery/model"
 
-	"github.com/bilibili/kratos/pkg/ecode"
-	log "github.com/bilibili/kratos/pkg/log"
-	bm "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	"github.com/go-kratos/kratos/pkg/ecode"
+	log "github.com/go-kratos/kratos/pkg/log"
+	bm "github.com/go-kratos/kratos/pkg/net/http/blademaster"
 )
 
 const (

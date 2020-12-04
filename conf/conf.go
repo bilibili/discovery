@@ -2,10 +2,10 @@ package conf
 
 import (
 	"github.com/BurntSushi/toml"
-	"github.com/bilibili/kratos/pkg/conf/env"
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	log "github.com/bilibili/kratos/pkg/log"
-	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	"github.com/go-kratos/kratos/pkg/conf/env"
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
+	log "github.com/go-kratos/kratos/pkg/log"
+	http "github.com/go-kratos/kratos/pkg/net/http/blademaster"
 )
 
 var (

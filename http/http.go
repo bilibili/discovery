@@ -6,8 +6,8 @@ import (
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/discovery"
 
-	log "github.com/bilibili/kratos/pkg/log"
-	bm "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	log "github.com/go-kratos/kratos/pkg/log"
+	bm "github.com/go-kratos/kratos/pkg/net/http/blademaster"
 )
 
 var (

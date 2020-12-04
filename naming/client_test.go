@@ -14,9 +14,9 @@ import (
 	"github.com/bilibili/discovery/discovery"
 	"github.com/bilibili/discovery/http"
 
-	"github.com/bilibili/kratos/pkg/conf/paladin"
-	xhttp "github.com/bilibili/kratos/pkg/net/http/blademaster"
-	xtime "github.com/bilibili/kratos/pkg/time"
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
+	xhttp "github.com/go-kratos/kratos/pkg/net/http/blademaster"
+	xtime "github.com/go-kratos/kratos/pkg/time"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

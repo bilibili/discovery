@@ -10,9 +10,9 @@ import (
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
-	"github.com/bilibili/kratos/pkg/ecode"
-	log "github.com/bilibili/kratos/pkg/log"
-	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	"github.com/go-kratos/kratos/pkg/ecode"
+	log "github.com/go-kratos/kratos/pkg/log"
+	http "github.com/go-kratos/kratos/pkg/net/http/blademaster"
 )
 
 const (

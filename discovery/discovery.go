@@ -7,7 +7,7 @@ import (
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/registry"
-	http "github.com/bilibili/kratos/pkg/net/http/blademaster"
+	http "github.com/go-kratos/kratos/pkg/net/http/blademaster"
 )
 
 // Discovery discovery.
