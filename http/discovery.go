@@ -107,7 +107,6 @@ func poll(c *bm.Context) {
 		}
 		return
 	case <-time.After(_pollWaitSecond):
-		c.JSON(nil, ecode.NotModified)
 	case <-c.Done():
 	}
 	c.JSON(nil, ecode.NotModified)
