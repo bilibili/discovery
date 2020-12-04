@@ -8,6 +8,7 @@ import (
 	"github.com/bilibili/discovery/naming"
 
 	"google.golang.org/grpc/resolver"
+	"google.golang.org/grpc/serviceconfig"
 )
 
 type mockResolver struct {
@@ -74,12 +75,19 @@ func (m *mockClientConn) NewServiceConfig(serviceConfig string) {
 func (m *mockClientConn) UpdateState(state resolver.State) {
 
 }
+func (m *mockClientConn) ReportError(error) {
+}
+
+func (m *mockClientConn) ParseServiceConfig(serviceConfigJSON string) *serviceconfig.ParseResult {
+	return nil
+}
+
 func TestBuilder(t *testing.T) {
 	target := resolver.Target{Endpoint: "discovery://default/service.name?zone=sh001&cluster=c1&cluster=c2&cluster=c3"}
 	mb := &mockBuilder{}
 	b := &Builder{mb}
 	cc := &mockClientConn{}
-	r, err := b.Build(target, cc, resolver.BuildOption{})
+	r, err := b.Build(target, cc, resolver.BuildOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
