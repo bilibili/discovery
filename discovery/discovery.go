@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"context"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +18,7 @@ type Discovery struct {
 	client    *http.Client
 	registry  *registry.Registry
 	nodes     atomic.Value
+	lock      sync.RWMutex
 }
 
 // New get a discovery.
@@ -38,5 +40,7 @@ func New(c *conf.Config) (d *Discovery, cancel context.CancelFunc) {
 func (d *Discovery) exitProtect() {
 	// exist protect mode after two renew cycle
 	time.Sleep(time.Second * 60)
+	d.lock.Lock()
 	d.protected = false
+	d.lock.Unlock()
 }
