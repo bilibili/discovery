@@ -192,8 +192,7 @@ func (p *Apps) InstanceInfo(zone string, latestTime int64, status uint32) (ci *I
 				// if up is false return all status instance
 				if i.filter(status) {
 					// if i.Status == InstanceStatusUP && i.LatestTimestamp > latestTime { // TODO(felix): increase
-					ni := copyInstance(i)
-					instances = append(instances, ni)
+					instances = append(instances, i)
 				}
 			}
 			ci.Instances[z] = instances
@@ -243,8 +242,7 @@ func (a *App) Instances() (is []*Instance) {
 	a.lock.RLock()
 	is = make([]*Instance, 0, len(a.instances))
 	for _, i := range a.instances {
-		ni := new(Instance)
-		*ni = *i
+		ni := copyInstance(i)
 		is = append(is, ni)
 	}
 	a.lock.RUnlock()
