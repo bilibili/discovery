@@ -7,7 +7,7 @@ all: test build
 build:
 	rm -rf dist/
 	mkdir -p dist/conf
-	cp cmd/discovery/discovery-example.toml dist/conf/discovery.toml
+	cp cmd/discovery/discovery.toml dist/conf/discovery.toml
 	$(GOBUILD) -o dist/bin/discovery cmd/discovery/main.go
 
 test:
