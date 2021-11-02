@@ -126,7 +126,6 @@ func (n *Node) call(c context.Context, action model.Action, i *model.Instance, u
 		params.Set("version", i.Version)
 		meta, _ := json.Marshal(i.Metadata)
 		params.Set("metadata", string(meta))
-		params.Set("reg_timestamp", strconv.FormatInt(i.RegTimestamp, 10))
 		params.Set("dirty_timestamp", strconv.FormatInt(i.DirtyTimestamp, 10))
 		params.Set("latest_timestamp", strconv.FormatInt(i.LatestTimestamp, 10))
 	case model.Renew:
