@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/bilibili/discovery/conf"
 	"github.com/bilibili/discovery/model"
