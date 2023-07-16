@@ -96,9 +96,7 @@ func copyInstance(oi *Instance) (ni *Instance) {
 	ni = new(Instance)
 	*ni = *oi
 	ni.Addrs = make([]string, len(oi.Addrs))
-	for i, add := range oi.Addrs {
-		ni.Addrs[i] = add
-	}
+	copy(ni.Addrs, oi.Addrs)
 	ni.Metadata = make(map[string]string)
 	for k, v := range oi.Metadata {
 		ni.Metadata[k] = v
